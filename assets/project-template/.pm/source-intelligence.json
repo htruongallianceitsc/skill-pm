@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "1.1",
+  "scan": {
+    "roots": [
+      "src",
+      "lib",
+      "app",
+      "apps",
+      "packages",
+      "server",
+      "client",
+      "backend",
+      "frontend",
+      "api",
+      "test",
+      "tests",
+      "e2e",
+      "playwright",
+      "database",
+      "db",
+      "sql",
+      "docs"
+    ],
+    "includeExtensions": [
+      ".py",
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx",
+      ".cs",
+      ".dart",
+      ".java",
+      ".kt",
+      ".kts",
+      ".go",
+      ".rs",
+      ".sql",
+      ".graphql",
+      ".gql",
+      ".json",
+      ".yaml",
+      ".yml",
+      ".md",
+      ".html",
+      ".css",
+      ".scss"
+    ],
+    "includeNames": [
+      "Dockerfile",
+      "Makefile"
+    ],
+    "ignoreGlobs": [
+      ".git/**",
+      ".pm/**",
+      "entities/**",
+      "schemas/**",
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      ".dart_tool/**",
+      ".next/**",
+      "coverage/**",
+      "vendor/**",
+      "bin/**",
+      "obj/**"
+    ],
+    "maxFileBytes": 1048576
+  },
+  "mapping": {
+    "scanEntityCodes": true,
+    "scanLocalRefs": false,
+    "explicit": [],
+    "scanKeyFields": {
+      "api": [
+        "data.path",
+        "data.operationId"
+      ],
+      "database-table": [
+        "data.tableName"
+      ],
+      "screen": [
+        "data.route"
+      ],
+      "test-script": [
+        "data.sourcePath"
+      ]
+    }
+  },
+  "dependency": {
+    "aliases": [],
+    "maxDepth": 8,
+    "testGlobs": [
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "**/*.spec.js",
+      "**/*.spec.jsx",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.test.js",
+      "**/*.test.jsx",
+      "test/**/*.dart",
+      "tests/**/*.py",
+      "test_*.py",
+      "*_test.py"
+    ]
+  }
+}

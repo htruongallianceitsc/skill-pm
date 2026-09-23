@@ -71,7 +71,8 @@
         "searchFields": [
           "code",
           "title",
-          "tags"
+          "tags",
+          "data.sourcePath"
         ],
         "form": {
           "sections": [
@@ -91,7 +92,11 @@
                 "data.documentType",
                 "data.owner",
                 "data.summary",
-                "data.audience"
+                "data.audience",
+                "data.sourcePath",
+                "data.diagramKind",
+                "data.requestId",
+                "data.relatedRef"
               ]
             }
           ]
@@ -107,7 +112,9 @@
       "defaults": {
         "status": "draft",
         "data": {
+          "moduleType": "feature-group",
           "owner": null,
+          "purpose": null,
           "scope": null,
           "order": null
         },
@@ -191,14 +198,17 @@
               "key": "details",
               "label": "Details",
               "fields": [
+                "data.moduleType",
                 "data.owner",
+                "data.purpose",
                 "data.scope",
                 "data.order"
               ]
             }
           ]
         }
-      }
+      },
+      "description": "Functional feature group. A module groups related features such as AUTH -> Login, Register, Forgot Password."
     },
     "feature": {
       "displayName": "Feature",
@@ -734,7 +744,8 @@
         "searchFields": [
           "code",
           "title",
-          "tags"
+          "tags",
+          "data.sourcePath"
         ],
         "form": {
           "sections": [
@@ -757,7 +768,8 @@
                 "data.authRequired",
                 "data.requestContentType",
                 "data.responseContentType",
-                "data.apiVersion"
+                "data.apiVersion",
+                "data.sourcePath"
               ]
             }
           ]
@@ -845,7 +857,8 @@
         "searchFields": [
           "code",
           "title",
-          "tags"
+          "tags",
+          "data.sourcePath"
         ],
         "form": {
           "sections": [
@@ -866,7 +879,9 @@
                 "data.tableName",
                 "data.objectType",
                 "data.primaryKey",
-                "data.engine"
+                "data.engine",
+                "data.columns",
+                "data.sourcePath"
               ]
             }
           ]
@@ -1359,7 +1374,8 @@
         "searchFields": [
           "code",
           "title",
-          "tags"
+          "tags",
+          "data.sourcePath"
         ],
         "form": {
           "sections": [
@@ -1379,7 +1395,9 @@
                 "data.framework",
                 "data.language",
                 "data.command",
-                "data.enabled"
+                "data.enabled",
+                "data.testCount",
+                "data.sourcePath"
               ]
             }
           ]

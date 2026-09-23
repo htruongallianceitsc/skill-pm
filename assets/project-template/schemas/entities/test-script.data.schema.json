@@ -28,6 +28,28 @@
     "enabled": {
       "type": "boolean",
       "default": true
+    },
+    "sourcePath": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Project-relative executable test script path."
+    },
+    "testCount": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Discovered test-title/line evidence."
     }
   },
   "required": [],

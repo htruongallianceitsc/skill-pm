@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0",
+  "views": {
+    "open-bugs": {
+      "title": "Open Bugs",
+      "description": "Bugs that are not closed or rejected.",
+      "expression": "type=bug AND status!=closed AND status!=rejected",
+      "columns": [
+        "code",
+        "title",
+        "status",
+        "data.severity",
+        "data.priority",
+        "updatedAt"
+      ],
+      "sort": [
+        {
+          "field": "data.severity",
+          "direction": "desc",
+          "values": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        {
+          "field": "updatedAt",
+          "direction": "desc"
+        }
+      ],
+      "limit": 200
+    },
+    "active-tasks": {
+      "title": "Active Tasks",
+      "description": "Tasks that are not completed or cancelled.",
+      "expression": "type=task AND status!=done AND status!=cancelled",
+      "columns": [
+        "code",
+        "title",
+        "status",
+        "data.priority",
+        "data.assignee",
+        "updatedAt"
+      ],
+      "sort": [
+        {
+          "field": "updatedAt",
+          "direction": "desc"
+        }
+      ],
+      "limit": 200
+    },
+    "approved-requirements": {
+      "title": "Approved Requirements",
+      "expression": "type=requirement AND (status=approved OR status=in_progress OR status=implemented)",
+      "columns": [
+        "code",
+        "title",
+        "status",
+        "updatedAt"
+      ],
+      "sort": [
+        {
+          "field": "code",
+          "direction": "asc"
+        }
+      ],
+      "limit": 500
+    },
+    "failed-tests": {
+      "title": "Failed or Blocked Tests",
+      "expression": "type=test-case AND (status=failed OR status=blocked)",
+      "columns": [
+        "code",
+        "title",
+        "status",
+        "data.testType",
+        "updatedAt"
+      ],
+      "sort": [
+        {
+          "field": "updatedAt",
+          "direction": "desc"
+        }
+      ],
+      "limit": 200
+    },
+    "implemented-apis": {
+      "title": "Implemented APIs",
+      "expression": "type=api AND status=implemented",
+      "columns": [
+        "code",
+        "title",
+        "data.method",
+        "data.path",
+        "status",
+        "updatedAt"
+      ],
+      "sort": [
+        {
+          "field": "data.path",
+          "direction": "asc"
+        }
+      ],
+      "limit": 500
+    }
+  }
+}

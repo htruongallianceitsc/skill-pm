@@ -106,6 +106,27 @@
       ],
       "min": 1,
       "category": "traceability"
+    },
+    {
+      "id": "feature-module-membership",
+      "label": "Active features should belong to one functional module",
+      "severity": "info",
+      "kind": "relation-count",
+      "targetEntityTypes": [
+        "feature"
+      ],
+      "statusIn": [
+        "planned",
+        "in_progress",
+        "done"
+      ],
+      "direction": "outgoing",
+      "relation": "belongs_to",
+      "peerEntityTypes": [
+        "module"
+      ],
+      "min": 1,
+      "category": "organization"
     }
   ]
 }

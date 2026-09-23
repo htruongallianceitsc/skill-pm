@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "2.1",
+  "schemaVersion": "2.4",
   "protocolVersion": "2.1",
   "identity": {
     "alwaysImmutableFields": [
@@ -30,7 +30,15 @@
     "auditState": ".pm/audit-state.json",
     "agentWorkflow": ".pm/agent-workflow.json",
     "workPlanFolder": ".pm/workplans",
-    "workPlanSchema": "schemas/core/workplan.schema.json"
+    "workPlanSchema": "schemas/core/workplan.schema.json",
+    "searchIndex": ".pm/indexes/search-index.json",
+    "localEngine": ".pm/local-engine.json",
+    "views": ".pm/views.json",
+    "sourceIntelligence": ".pm/source-intelligence.json",
+    "sourceIndex": ".pm/indexes/source-index.json",
+    "dependencyIndex": ".pm/indexes/dependency-index.json",
+    "documentationPolicy": ".pm/documentation-policy.json",
+    "requestFolder": ".pm/requests"
   },
   "sync": {
     "baseUrl": "",

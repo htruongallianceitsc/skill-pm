@@ -12,6 +12,8 @@ This folder is a portable project database. It can be managed locally without th
 - `.pm/intelligence.json`: configurable graph traversal, AI context, impact, orphan, and health behavior.
 - `.pm/change-management.json`: audit/review/undo/baseline policy.
 - `.pm/agent-workflow.json`: AI WorkPlan planning/review/execution policy.
+- `.pm/local-engine.json`: local indexing/query limits and Doctor policy.
+- `.pm/views.json`: saved local views (query + columns/sort/grouping only).
 - `.pm/workplans/**`: portable WorkPlan records; completed plans point to their ChangeSet.
 - `.pm/changesets/**`, `.pm/baselines/**`: canonical governance history.
 - `.pm/audit-state.json`: local snapshot used to detect direct/manual edits.
@@ -32,6 +34,21 @@ A client should be able to generate navigation, CRUD forms, list columns, filter
 ## Single-file mode
 
 Use `bundle-export` to package project metadata, definitions, entities, referenced UTF-8 content, WorkPlans, ChangeSets, baselines, and audit state into one `project.bundle.json`. A browser or desktop client can manage that JSON independently, then `bundle-import` it back into folder form.
+
+## Local search, query, and Doctor
+
+```bash
+python scripts/pm_project.py reindex --project ./MyProject
+python scripts/pm_project.py search --project ./MyProject --text "reset password"
+python scripts/pm_project.py query --project ./MyProject --expr 'type=bug AND status!=closed AND data.severity=critical'
+python scripts/pm_project.py query --project ./MyProject --expr 'type=test-case' --related-to FEAT-001 --max-depth 2
+python scripts/pm_project.py view-list --project ./MyProject
+python scripts/pm_project.py view-run --project ./MyProject --view open-bugs
+python scripts/pm_project.py doctor --project ./MyProject
+python scripts/pm_project.py doctor --project ./MyProject --fix
+```
+
+Indexes are disposable caches. `doctor --fix` performs safe cache/folder repairs only; use `--fix-level semantic` explicitly for deterministic entity metadata repair.
 
 ## Project intelligence
 
@@ -77,3 +94,62 @@ python scripts/pm_project.py plan-execute --project ./MyProject --plan PLAN-... 
 ```
 
 Use `$step:S1` or `$handle:feature-name` to reference entities created earlier in the same plan. Submission captures base hashes; approval/execution stop when reviewed entities or workspace definitions have changed. Successful execution produces one linked ChangeSet.
+
+## Source code and Git intelligence
+
+The source index is disposable and does not turn every code file into an entity:
+
+```bash
+python scripts/pm_project.py scan-source --project ./MyProject
+python scripts/pm_project.py source-map --project ./MyProject --path src/auth/login.ts
+python scripts/pm_project.py git-status --project ./MyProject
+python scripts/pm_project.py git-impact --project ./MyProject --commit HEAD
+python scripts/pm_project.py commit-context --project ./MyProject --commit HEAD
+```
+
+Configure scan roots and mapping rules in `.pm/source-intelligence.json`. Technical importers are discovery-only unless `--apply` is supplied:
+
+```bash
+python scripts/pm_project.py scan-openapi --project ./MyProject --path api/openapi.yaml
+python scripts/pm_project.py scan-database --project ./MyProject --path db/schema.sql --engine PostgreSQL
+python scripts/pm_project.py scan-playwright --project ./MyProject --path tests
+python scripts/pm_project.py import-markdown --project ./MyProject --path docs/architecture.md
+```
+
+When an implementation ChangeSet already exists, attach the final commit with `git-link`. Use `git-changeset` only for historical/external commit evidence; evidence ChangeSets are not reversible.
+
+## Code dependency, regression tests, and change planning
+
+Build and inspect the derived local code graph:
+
+```bash
+python scripts/pm_project.py code-deps --project ./MyProject --path src/auth/login.ts --direction both
+python scripts/pm_project.py dependency-tree --project ./MyProject --path src/auth/login.ts --direction dependents
+python scripts/pm_project.py circular-dependencies --project ./MyProject
+```
+
+Analyze current changes through both code and project graphs, then select likely regression tests:
+
+```bash
+python scripts/pm_project.py code-impact --project ./MyProject --working-tree
+python scripts/pm_project.py changed-tests --project ./MyProject --commit HEAD
+python scripts/pm_project.py test-selection --project ./MyProject --path src/auth/auth.service.ts
+```
+
+Create a reviewable planning shell from code changes:
+
+```bash
+python scripts/pm_project.py plan-from-git --project ./MyProject --commit HEAD --actor ai:agent --reason "Review commit impact"
+python scripts/pm_project.py plan-from-diff --project ./MyProject --working-tree --actor ai:agent --reason "Review working tree"
+```
+
+Generated plans intentionally contain no executable mutation steps. Review the impact/tests, then use `plan-amend` to author deterministic steps before `plan-submit`. The dependency index is disposable and can be rebuilt with `reindex`.
+
+
+## Documentation-first v9
+
+- Start an empty project with `idea-bootstrap`.
+- Trace project questions/requests under `.pm/requests/`.
+- `docs/project-graph.html` is generated from entities and relations.
+- Generate readable standalone HTML diagrams with `diagram-create`.
+- Implementation is intentionally gated behind the explicit `implement` command.

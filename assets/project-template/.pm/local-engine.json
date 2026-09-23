@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "indexing": {
+    "enabled": true,
+    "includeData": true,
+    "includeInlineContent": true,
+    "includeFileContent": true,
+    "maxFileChars": 200000,
+    "maxEntityTextChars": 300000,
+    "tokenMinLength": 2,
+    "stopWords": []
+  },
+  "query": {
+    "defaultLimit": 100,
+    "maxLimit": 1000
+  },
+  "doctor": {
+    "safeFixesDefault": true,
+    "semanticFixesRequireExplicitLevel": true
+  }
+}

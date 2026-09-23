@@ -15,6 +15,7 @@ project-root/
 │   ├── relation-map.json
 │   ├── lookups.json
 │   ├── quality-rules.json
+│   ├── source-intelligence.json
 │   ├── manifest.json
 │   ├── sync-state.json
 │   ├── change-management.json
@@ -26,7 +27,9 @@ project-root/
 │   │   └── quality-report.json
 │   └── indexes/
 │       ├── entity-index.json
-│       └── relation-index.json
+│       ├── relation-index.json
+│       ├── search-index.json
+│       └── source-index.json
 ├── entities/
 │   └── <configured-type-folders>/*.json
 ├── files/
@@ -45,7 +48,7 @@ Canonical local project data:
 - `project.json`;
 - entity JSON files;
 - optional referenced content files;
-- entity registry, relation map, lookups, quality rules, change-management policy, and schemas;
+- entity registry, relation map, lookups, quality rules, source-intelligence configuration, change-management policy, and schemas;
 - audited `.pm/changesets/*` and named `.pm/baselines/*`.
 
 Sync/bookkeeping state:
@@ -128,3 +131,15 @@ ChangeSets preserve before/after payloads for normal CLI operations and approved
 ## Agent planning layer
 
 Keep `.pm/agent-workflow.json`, `schemas/core/workplan.schema.json`, and `.pm/workplans/*.json` separate from domain entities. WorkPlans capture a requested change, assumptions/risks/acceptance criteria, deterministic steps, reviewed base hashes, and execution outcome. They are synchronized and bundled so the web client can review/edit plans without inventing a domain entity type. A completed plan links to one ChangeSet for exact audit traceability. See `agent-workflow.md`.
+
+## Source/Git intelligence layer
+
+Keep `.pm/source-intelligence.json` as canonical configuration and `.pm/indexes/source-index.json` as a disposable cache. The source index may inspect normal repository files under configured roots, but those source files do not automatically become domain entities and are not copied into the portable project bundle unless a domain entity explicitly references them as content.
+
+The mapping model separates evidence from business relationships:
+
+- exact evidence: entity JSON path, referenced content path, `data` path, or explicit path mapping;
+- medium evidence: entity code/localRef/technical identifier mentioned in source;
+- permanent project relations: only those explicitly stored in entity `relations[]` and validated by `.pm/relation-map.json`.
+
+Git analysis maps changed paths to entity evidence first, then expands through the configured impact graph. This keeps Git/source heuristics inspectable and prevents accidental graph mutation.

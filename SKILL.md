@@ -1,6 +1,6 @@
 ---
 name: project-workspace-manager
-description: Manage schema-driven software projects stored as portable local folders of JSON entities plus optional Markdown, HTML, SQL, OpenAPI, and test files. Use for initializing or maintaining project workspaces; creating, editing, querying, linking, transitioning, validating, tracing, building focused AI context, impact/coverage analysis, AI-authored WorkPlans with review/approval/execution, audited change history, diff/undo, release baselines, portable bundles, or synchronization through one Project Manager API with immutable server id/code fields and explicit conflict handling.
+description: Manage documentation-first, schema-driven software projects stored as portable local folders of JSON entities plus Markdown/HTML/source/test files. Use for bootstrapping an idea into structured documents; tracing every project request/question; grouping Features under Modules; generating offline HTML entity graphs and business/feature diagrams; local search/query/doctor; source/Git dependency and impact analysis; reviewed WorkPlans; explicit implementation with Task status updates; audited history, baselines, portable bundles, and optional API sync.
 ---
 
 # Project Workspace Manager
@@ -17,13 +17,31 @@ Treat the project folder as the portable local source of truth. Keep normal loca
 6. Read `.pm/relation-map.json` before changing relationships. Never infer a relationship from convention.
 7. Use `.pm/quality-rules.json` for traceability/coverage checks. Do not hard-code quality expectations.
 8. Use `.pm/intelligence.json` for bounded graph traversal, context, impact, orphan, and health behavior.
-9. Use `.pm/agent-workflow.json` and `.pm/workplans/` for reviewed AI planning; never treat a WorkPlan as a domain entity.
-10. Use `uid` as the permanent internal key for all relations.
-11. Leave official `id` and `code` null for locally created records until the API assigns them.
-12. Once server identity is locked in `.pm/sync-state.json`, never change `id` or `code` locally.
-13. Keep sync bookkeeping outside domain entity JSON.
-14. Prefer soft deletion. Physically purge only after remote acknowledgement and an explicit user request.
-15. Rebuild manifest/indexes after semantic changes.
+9. Use `.pm/local-engine.json`, `.pm/views.json`, and `.pm/indexes/search-index.json` for local indexed discovery/query/view behavior. Treat indexes as disposable derived caches, never source data.
+10. Use `.pm/documentation-policy.json` and `.pm/requests/` for documentation-first interaction tracing, implementation gating, and generated HTML graph behavior.
+11. Use `.pm/source-intelligence.json` and `.pm/indexes/source-index.json` for source-code/Git introspection. Keep source index disposable; keep domain entities as the durable project model.
+12. Use `.pm/agent-workflow.json` and `.pm/workplans/` for reviewed AI planning; never treat a WorkPlan as a domain entity.
+13. Use `uid` as the permanent internal key for all relations.
+14. Leave official `id` and `code` null for locally created records until the API assigns them.
+15. Once server identity is locked in `.pm/sync-state.json`, never change `id` or `code` locally.
+16. Keep sync bookkeeping outside domain entity JSON.
+17. Prefer soft deletion. Physically purge only after remote acknowledgement and an explicit user request.
+18. Rebuild manifest/indexes after semantic changes; rebuild the source index after source-code/config changes when Git/source analysis is needed.
+
+## Documentation-first interaction workflow
+
+Apply this workflow to every project-scoped user question or request unless the user explicitly asks not to persist it:
+
+1. Capture the interaction first with `request-capture`. Questions are traced even when they do not create a document. Idea/request/requirement/change records create a Request Note document by default.
+2. When the workspace is empty and the user starts from an idea, run `idea-bootstrap` before designing code. It creates Idea Brief, Product Scope, Functional Overview, Business Rules & Assumptions, Technical Outline, and Open Questions/Decisions documents.
+3. Update/create documents before implementation planning. Keep business/process/feature understanding in Markdown or standalone HTML documents.
+4. Treat Module strictly as a functional group of Features (`Feature --belongs_to--> Module`). Example: `AUTH` groups Login/Register/Forgot Password. Do not use Module as a catch-all parent for API/Requirement/Test entities.
+5. Never execute implementation with `plan-execute` directly when the default policy is active. Use the explicit `implement` command only after the WorkPlan is approved and documentation is linked.
+6. Let `implement` transition related Tasks to `in_progress` and then `done` after success; if no Task is linked, allow the policy to create an implementation Task automatically.
+7. Regenerate `docs/project-graph.html` automatically whenever manifest/indexes rebuild. Use `graph-build` to force regeneration after external/manual edits.
+8. Use `diagram-create` to generate portable HTML flow/business-flow/feature-flow/architecture documents. Prefer `--from-ref` for a quick feature map; use `--spec-file` when the actual sequence/business flow matters.
+
+See `references/documentation-first.md`.
 
 ## Schema-driven entity workflow
 
@@ -78,6 +96,20 @@ Use `content[]` for long-form or executable content:
 - Use file mode for developer-edited scripts/specs or larger content.
 - Keep referenced paths project-relative and inside the project root.
 - Include file content/hash in sync only when supported by configuration.
+
+## Local search, query, views, and doctor
+
+Treat local indexes as rebuildable acceleration only. Entity JSON and referenced project files remain canonical.
+
+1. Use `reindex` after manual/bulk filesystem edits; normal CLI semantic commands rebuild indexes automatically.
+2. Use `search` for full-text discovery across core metadata, `data.*`, inline content, and referenced UTF-8 content. Allow it to rebuild stale indexes unless the caller explicitly requests `--no-reindex`.
+3. Use `query --expr` for field-aware filtering with boolean expressions and optional graph scope (`--related-to`, relation, direction, depth). Prefer this over ad-hoc file scans.
+4. Keep reusable local dashboards in `.pm/views.json`; run them with `view-run`. Saved views store only query/presentation configuration, never copied entity data.
+5. Use `doctor` to diagnose structural errors, broken links, stale/missing derived indexes, and invalid saved-view expressions.
+6. `doctor --fix` may only repair safe local infrastructure by default. Require explicit `--fix-level semantic` for deterministic business-file repairs such as correcting a relation's `targetType` to the actual target entity type when the configured relation map allows it. Audit semantic doctor repairs as ChangeSets.
+7. Do not hide validation errors by deleting or weakening source data/rules during auto-fix.
+
+See `references/local-search-query.md` and `references/project-doctor.md`.
 
 ## Quality and traceability
 
@@ -151,6 +183,35 @@ Supported starter operations are `create`, `update`, `content-upsert`, `link`, `
 
 WorkPlans sync bidirectionally through the same Project Manager endpoint and use optimistic conflict handling separate from domain entity sync. See `references/agent-workflow.md`.
 
+## Local source and Git intelligence
+
+Treat source-code analysis as local evidence layered on top of the project knowledge graph. Do not create one domain entity per source file by default.
+
+1. Configure scan roots/extensions/ignores and explicit mappings in `.pm/source-intelligence.json`.
+2. Run `scan-source` to build `.pm/indexes/source-index.json`. The index stores file hashes, languages, lightweight symbols/imports, and evidence that maps source paths back to project entities.
+3. Prefer exact mapping evidence from entity JSON/content/data paths. Use technical identifiers such as API path/operationId or table name as medium-confidence evidence. Use explicit path mappings for ambiguous codebases.
+4. Use `source-map` to inspect why a file maps to an entity before relying on the mapping for impact analysis.
+5. Use `git-status`, `changes-since-commit`, `git-impact`, and `commit-context` to translate Git file changes into direct entity matches and graph-based potential impact. Treat graph expansion as potential impact, not proof of runtime behavior.
+6. Use `git-link` to attach a real commit to an existing applied ChangeSet. Use `git-changeset` only when a commit needs evidence/audit capture but no entity before/after snapshot exists; evidence ChangeSets are not reversible.
+7. Use `scan-openapi`, `scan-database`, and `scan-playwright` without `--apply` for discovery first. Add `--apply` only when the generated candidates should become API/database-table/test-script entities.
+8. Use `import-markdown` to turn an existing Markdown file into a document entity while preserving a project-relative content reference.
+9. Never invent links merely because filenames look similar. Preserve mapping evidence and confidence.
+
+See `references/git-source-introspection.md`.
+
+## Code dependency and change intelligence
+
+Use the disposable code dependency graph to reason from changed files to dependent code before crossing into the durable project graph.
+
+1. Build source/dependency indexes with `reindex`, or inspect one path with `code-deps --rebuild`.
+2. Use `code-deps` / `dependency-tree` to inspect imports and dependents; use `circular-dependencies` for strongly connected source cycles.
+3. Use `code-impact` for working-tree, commit, range, or explicit-path analysis. Traverse source **dependents** first, then map files to entities, then expand via configured project impact relations. Treat all results as potential impact.
+4. Use `test-selection` or Git-oriented `changed-tests` to select regression tests from both source dependencies and `test-script` entities. Return runner commands only when the workspace has enough evidence; never invent a test runner.
+5. Use `plan-from-git` / `plan-from-diff` to create a draft WorkPlan shell containing impact evidence and selected tests. These generated plans intentionally have zero executable steps and `requiresAuthoring=true`; amend them with reviewed deterministic steps before submission.
+6. Configure path aliases and test globs under `.pm/source-intelligence.json`; keep `.pm/indexes/dependency-index.json` disposable.
+
+See `references/code-change-intelligence.md`.
+
 ## Sync workflow
 
 Use the single endpoint configured in `.pm/config.json`. Sync both domain entities and the workspace definition needed by a generic web client.
@@ -186,12 +247,21 @@ See `references/sync-protocol.md` and `references/api_reference.md`.
 Use `scripts/pm_project.py` for repeatable operations:
 
 - `init`: initialize a workspace from the template.
+- `idea-bootstrap`: initialize an empty workspace with a structured documentation pack for an idea, without generating code.
+- `request-capture` / `request-list` / `request-show` / `request-close`: persist interaction trace records and documentation links.
+- `graph-build`: regenerate the standalone offline HTML entity/relation graph.
+- `diagram-create`: create a Document backed by a standalone HTML flow/feature/business diagram.
+- `implement`: the explicit documentation-gated WorkPlan execution command; automatically drives implementation Task status.
 - `create`: create a schema-valid local entity.
 - `update`: update title, tags, or type-specific data without touching identity/status.
 - `transition`: change status through the configured lifecycle.
 - `link` / `unlink`: mutate validated relations.
 - `delete` / `restore`: soft-delete or restore.
-- `query`: filter local entities by type, status, tag, or text.
+- `query`: filter local entities with boolean field expressions and optional graph scope; legacy type/status/tag/text flags remain supported.
+- `search`: use the local inverted index to search metadata, `data.*`, inline content, and referenced UTF-8 files.
+- `reindex`: rebuild manifest, entity/relation/search indexes, plus the local source-code index.
+- `view-list` / `view-show` / `view-run`: execute reusable saved local views from `.pm/views.json`.
+- `doctor`: diagnose workspace/index/view/link problems; optionally apply safe or explicit semantic repairs.
 - `describe`: return an entity type definition, schema, lookups, and relation mappings for an agent/generic client.
 - `manifest`: rebuild generated indexes.
 - `validate`: validate identity, schema, lifecycle status, relations, files, and server locks.
@@ -214,6 +284,15 @@ Use `scripts/pm_project.py` for repeatable operations:
 - `plans` / `plan-show`: inspect planning state and stale-context findings.
 - `plan-submit` / `plan-refresh` / `plan-approve` / `plan-reject` / `plan-cancel`: run the WorkPlan review lifecycle with base-hash protection.
 - `plan-execute`: execute an approved plan atomically and create one linked ChangeSet.
+- `scan-source` / `source-map`: build and inspect source-file-to-entity evidence without turning source files into domain entities.
+- `code-deps` / `dependency-tree` / `circular-dependencies`: inspect the disposable local source dependency graph.
+- `code-impact`: propagate changed files through source dependents, then map into durable project-graph potential impact.
+- `test-selection` / `changed-tests`: select regression tests using both source dependencies and project `test-script` impact.
+- `plan-from-git` / `plan-from-diff`: create reviewable draft WorkPlan shells from code-change evidence; amend before submission.
+- `git-status` / `changes-since-commit` / `git-impact` / `commit-context`: connect Git changes to entity context and graph-based potential impact.
+- `git-link` / `git-changeset`: associate commits with audited project changes or capture non-reversible Git evidence.
+- `scan-openapi` / `scan-database` / `scan-playwright`: introspect technical artifacts and optionally create domain entities with `--apply`.
+- `import-markdown`: import an existing Markdown file as a portable document entity.
 - `bundle-export`: export the entire portable project into one self-contained JSON bundle for browser/desktop clients.
 - `bundle-import`: restore a workspace folder from the portable JSON bundle.
 - `sync`: call the configured single sync endpoint; supports scope filters, dry-run, changed workspace definitions, and explicit force-local mode.
@@ -229,6 +308,9 @@ Run `validate` before sync and after bulk/manual edits.
 - `references/relationship-mapping.md`: dynamic graph rules and cardinality.
 - `references/quality-traceability.md`: configurable coverage/traceability rules.
 - `references/project-intelligence.md`: bounded context retrieval, trace, impact, coverage, orphan/broken-link diagnostics, and health reporting.
+- `references/local-search-query.md`: local full-text index, query expression language, graph-scoped filtering, and saved views.
+- `references/project-doctor.md`: diagnostic categories, safe vs semantic repairs, and audit expectations.
+- `references/git-source-introspection.md`: source indexing, importers, Git mapping evidence, commit context, and Git-to-graph impact workflow.
 - `references/change-management.md`: audited ChangeSets, AI proposal/review, diff/undo, direct-edit detection, and release baselines.
 - `references/agent-workflow.md`: AI WorkPlan lifecycle, stale-context protection, deterministic operations, atomic execution, and planning sync.
 - `references/sync-protocol.md`: sync protocol, conflicts, workspace-definition sync, and server identity.

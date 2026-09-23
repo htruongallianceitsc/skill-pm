@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0",
+  "traceAllInteractions": true,
+  "documentationFirst": true,
+  "implementationCommand": "implement",
+  "implementationRequiresApprovedPlan": true,
+  "implementationRequiresDocumentation": true,
+  "autoCreateRequestDocumentForKinds": [
+    "idea",
+    "request",
+    "requirement",
+    "change"
+  ],
+  "autoCreateImplementationTask": true,
+  "closeTasksOnSuccessfulImplementation": true,
+  "graphHtml": {
+    "enabled": true,
+    "path": "docs/project-graph.html",
+    "autoRebuildOnManifest": true
+  },
+  "ideaBootstrap": {
+    "documentTypes": [
+      "idea-brief",
+      "product-scope",
+      "functional-overview",
+      "business-rules",
+      "technical-outline",
+      "open-questions"
+    ]
+  }
+}

@@ -21,6 +21,18 @@
         "null"
       ],
       "minimum": 0
+    },
+    "moduleType": {
+      "type": "string",
+      "const": "feature-group",
+      "default": "feature-group",
+      "description": "Module is a functional group of features."
+    },
+    "purpose": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "required": [],

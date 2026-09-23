@@ -27,6 +27,31 @@
       "items": {
         "type": "string"
       }
+    },
+    "sourcePath": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Project-relative source file imported or referenced by this document."
+    },
+    "diagramKind": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "requestId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "relatedRef": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "required": [],

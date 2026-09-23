@@ -36,6 +36,20 @@
         "string",
         "null"
       ]
+    },
+    "columns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lightweight discovered column-name evidence."
+    },
+    "sourcePath": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Project-relative SQL/DDL source path."
     }
   },
   "required": [],

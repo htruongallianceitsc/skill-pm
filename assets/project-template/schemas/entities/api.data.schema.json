@@ -55,6 +55,13 @@
         "string",
         "null"
       ]
+    },
+    "sourcePath": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Project-relative OpenAPI/source specification path."
     }
   },
   "required": [],

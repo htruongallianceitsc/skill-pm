@@ -1,7 +1,7 @@
 interface:
   display_name: Project Workspace Manager
-  short_description: Manage JSON projects, AI WorkPlans, audit, graph context, and
-    safe sync
+  short_description: Manage local JSON projects, Git/source impact, AI WorkPlans,
+    audit, and graph context
   brand_color: '#2563EB'
 policy:
   products:
