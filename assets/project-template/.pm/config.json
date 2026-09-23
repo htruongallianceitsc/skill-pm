@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "2.4",
+  "schemaVersion": "2.5",
   "protocolVersion": "2.1",
   "identity": {
     "alwaysImmutableFields": [
@@ -38,7 +38,8 @@
     "sourceIndex": ".pm/indexes/source-index.json",
     "dependencyIndex": ".pm/indexes/dependency-index.json",
     "documentationPolicy": ".pm/documentation-policy.json",
-    "requestFolder": ".pm/requests"
+    "requestFolder": ".pm/requests",
+    "governance": ".pm/governance.json"
   },
   "sync": {
     "baseUrl": "",

@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1.0",
+  "documentationFreshness": {
+    "enabled": true,
+    "trackedRelation": "documents",
+    "snapshotField": "freshness",
+    "blockDoneWhenStale": true,
+    "allowWaiver": true
+  },
+  "definitionOfReady": {
+    "enabled": true,
+    "checks": [
+      "approved-plan",
+      "documentation-present",
+      "no-related-open-questions",
+      "validation-clean"
+    ],
+    "blockOnFailure": true
+  },
+  "definitionOfDone": {
+    "enabled": true,
+    "checks": [
+      "tasks-done",
+      "validation-clean",
+      "no-blocking-quality",
+      "documentation-current"
+    ],
+    "blockOnFailure": true,
+    "allowWaiver": true
+  },
+  "traceability": {
+    "enabled": true,
+    "htmlPath": "docs/traceability.html",
+    "jsonPath": ".pm/reports/traceability.json",
+    "autoRebuildOnManifest": true
+  },
+  "dashboard": {
+    "enabled": true,
+    "htmlPath": "docs/project-dashboard.html",
+    "autoRebuildOnManifest": true,
+    "recentChangeCount": 12
+  },
+  "requests": {
+    "promotionTargets": [
+      "document",
+      "module",
+      "feature",
+      "requirement",
+      "business-rule",
+      "task",
+      "bug",
+      "decision"
+    ],
+    "defaultByKind": {
+      "question": "decision",
+      "idea": "feature",
+      "request": "requirement",
+      "requirement": "requirement",
+      "change": "task"
+    }
+  }
+}

@@ -30,3 +30,7 @@
   "notes": "Invalid credentials return an error and no session."
 }
 ```
+
+## V10 consistency gates
+
+After documentation-first planning, use Definition of Ready before `implement`. After execution, use Definition of Done before closing Tasks. Linked Documents are freshness-tracked by source entity revision/hash. If implementation changes documented scope without updating the Document, the implementation may remain applied but Task completion must stop until documentation is reconciled or explicitly waived. Use `implementation-complete` after remediation rather than re-running a completed WorkPlan.

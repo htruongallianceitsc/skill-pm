@@ -104,6 +104,45 @@
         }
       ],
       "limit": 500
+    },
+    "open-decisions": {
+      "title": "Open Decisions",
+      "description": "Project decisions still awaiting acceptance or rejection.",
+      "expression": "type=decision AND status=proposed",
+      "columns": [
+        "code",
+        "title",
+        "status",
+        "data.decisionType",
+        "updatedAt"
+      ],
+      "sort": [
+        {
+          "field": "updatedAt",
+          "direction": "desc"
+        }
+      ],
+      "limit": 200
+    },
+    "stale-documents": {
+      "title": "Documents needing reconciliation",
+      "description": "Documents; run doc-check for computed freshness status.",
+      "expression": "type=document",
+      "columns": [
+        "code",
+        "title",
+        "status",
+        "data.documentType",
+        "data.freshness.status",
+        "updatedAt"
+      ],
+      "sort": [
+        {
+          "field": "updatedAt",
+          "direction": "desc"
+        }
+      ],
+      "limit": 500
     }
   }
 }

@@ -127,6 +127,46 @@
       ],
       "min": 1,
       "category": "organization"
+    },
+    {
+      "id": "feature-documentation-coverage",
+      "label": "Planned or active features should have documentation",
+      "severity": "warning",
+      "kind": "relation-count",
+      "targetEntityTypes": [
+        "feature"
+      ],
+      "statusIn": [
+        "planned",
+        "in_progress",
+        "done"
+      ],
+      "direction": "incoming",
+      "relation": "documents",
+      "peerEntityTypes": [
+        "document"
+      ],
+      "min": 1,
+      "category": "documentation"
+    },
+    {
+      "id": "decision-traceability",
+      "label": "Accepted decisions should relate to project scope",
+      "severity": "info",
+      "kind": "relation-count",
+      "targetEntityTypes": [
+        "decision"
+      ],
+      "statusIn": [
+        "accepted"
+      ],
+      "direction": "outgoing",
+      "relation": "relates_to",
+      "peerEntityTypes": [
+        "*"
+      ],
+      "min": 1,
+      "category": "governance"
     }
   ]
 }

@@ -52,6 +52,59 @@
         "string",
         "null"
       ]
+    },
+    "freshness": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "untracked",
+            "current",
+            "stale",
+            "waived"
+          ]
+        },
+        "reconciledAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "uid": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "integer"
+              },
+              "payloadHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "uid",
+              "revision"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": true
     }
   },
   "required": [],

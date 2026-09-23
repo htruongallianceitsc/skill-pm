@@ -153,3 +153,7 @@ Generated plans intentionally contain no executable mutation steps. Review the i
 - `docs/project-graph.html` is generated from entities and relations.
 - Generate readable standalone HTML diagrams with `diagram-create`.
 - Implementation is intentionally gated behind the explicit `implement` command.
+
+## V10 Project Consistency & Governance
+
+Use `doc-check`, `traceability`, `dashboard-build`, `request-promote`, `decision-create`, `ready-check`, and `done-check` to keep documentation, scope, tasks, decisions, and implementation consistent.

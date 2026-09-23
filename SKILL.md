@@ -1,6 +1,6 @@
 ---
 name: project-workspace-manager
-description: Manage documentation-first, schema-driven software projects stored as portable local folders of JSON entities plus Markdown/HTML/source/test files. Use for bootstrapping an idea into structured documents; tracing every project request/question; grouping Features under Modules; generating offline HTML entity graphs and business/feature diagrams; local search/query/doctor; source/Git dependency and impact analysis; reviewed WorkPlans; explicit implementation with Task status updates; audited history, baselines, portable bundles, and optional API sync.
+description: Manage documentation-first, schema-driven software projects stored as portable local folders of JSON entities plus Markdown/HTML/source/test files. Use for idea bootstrapping, request/question trace and promotion, Decision lifecycle, Module-to-Feature organization, offline graph/diagram/dashboard/traceability HTML, documentation freshness and reconciliation, Definition of Ready/Done gates, local search/query/doctor, source/Git impact analysis, reviewed WorkPlans, explicit implementation with Task status governance, audited history, baselines, portable bundles, and optional API sync.
 ---
 
 # Project Workspace Manager
@@ -19,14 +19,15 @@ Treat the project folder as the portable local source of truth. Keep normal loca
 8. Use `.pm/intelligence.json` for bounded graph traversal, context, impact, orphan, and health behavior.
 9. Use `.pm/local-engine.json`, `.pm/views.json`, and `.pm/indexes/search-index.json` for local indexed discovery/query/view behavior. Treat indexes as disposable derived caches, never source data.
 10. Use `.pm/documentation-policy.json` and `.pm/requests/` for documentation-first interaction tracing, implementation gating, and generated HTML graph behavior.
-11. Use `.pm/source-intelligence.json` and `.pm/indexes/source-index.json` for source-code/Git introspection. Keep source index disposable; keep domain entities as the durable project model.
-12. Use `.pm/agent-workflow.json` and `.pm/workplans/` for reviewed AI planning; never treat a WorkPlan as a domain entity.
-13. Use `uid` as the permanent internal key for all relations.
-14. Leave official `id` and `code` null for locally created records until the API assigns them.
-15. Once server identity is locked in `.pm/sync-state.json`, never change `id` or `code` locally.
-16. Keep sync bookkeeping outside domain entity JSON.
-17. Prefer soft deletion. Physically purge only after remote acknowledgement and an explicit user request.
-18. Rebuild manifest/indexes after semantic changes; rebuild the source index after source-code/config changes when Git/source analysis is needed.
+11. Use `.pm/governance.json` for documentation freshness, request promotion, traceability/dashboard generation, and Definition of Ready/Done checks.
+12. Use `.pm/source-intelligence.json` and `.pm/indexes/source-index.json` for source-code/Git introspection. Keep source index disposable; keep domain entities as the durable project model.
+13. Use `.pm/agent-workflow.json` and `.pm/workplans/` for reviewed AI planning; never treat a WorkPlan as a domain entity.
+14. Use `uid` as the permanent internal key for all relations.
+15. Leave official `id` and `code` null for locally created records until the API assigns them.
+16. Once server identity is locked in `.pm/sync-state.json`, never change `id` or `code` locally.
+17. Keep sync bookkeeping outside domain entity JSON.
+18. Prefer soft deletion. Physically purge only after remote acknowledgement and an explicit user request.
+19. Rebuild manifest/indexes after semantic changes; rebuild the source index after source-code/config changes when Git/source analysis is needed.
 
 ## Documentation-first interaction workflow
 
@@ -36,10 +37,12 @@ Apply this workflow to every project-scoped user question or request unless the 
 2. When the workspace is empty and the user starts from an idea, run `idea-bootstrap` before designing code. It creates Idea Brief, Product Scope, Functional Overview, Business Rules & Assumptions, Technical Outline, and Open Questions/Decisions documents.
 3. Update/create documents before implementation planning. Keep business/process/feature understanding in Markdown or standalone HTML documents.
 4. Treat Module strictly as a functional group of Features (`Feature --belongs_to--> Module`). Example: `AUTH` groups Login/Register/Forgot Password. Do not use Module as a catch-all parent for API/Requirement/Test entities.
-5. Never execute implementation with `plan-execute` directly when the default policy is active. Use the explicit `implement` command only after the WorkPlan is approved and documentation is linked.
-6. Let `implement` transition related Tasks to `in_progress` and then `done` after success; if no Task is linked, allow the policy to create an implementation Task automatically.
-7. Regenerate `docs/project-graph.html` automatically whenever manifest/indexes rebuild. Use `graph-build` to force regeneration after external/manual edits.
-8. Use `diagram-create` to generate portable HTML flow/business-flow/feature-flow/architecture documents. Prefer `--from-ref` for a quick feature map; use `--spec-file` when the actual sequence/business flow matters.
+5. Before implementation, run/obey Definition of Ready: approved plan, linked documentation, no related open questions, and clean structural validation unless explicitly waived after review.
+6. Never execute implementation with `plan-execute` directly when the default policy is active. Use the explicit `implement` command only after the WorkPlan is approved and documentation is linked.
+7. After implementation, evaluate Definition of Done. Do not close Tasks when linked documentation is stale, validation/quality gates fail, or remediation remains. Use `implementation-complete` after reconciliation to close blocked implementation Tasks.
+8. Let `implement` transition related Tasks to `in_progress`; mark them `done` only after Definition of Done passes. If no Task is linked, allow the policy to create an implementation Task automatically.
+9. Regenerate `docs/project-graph.html` automatically whenever manifest/indexes rebuild. Use `graph-build` to force regeneration after external/manual edits.
+10. Use `diagram-create` to generate portable HTML flow/business-flow/feature-flow/architecture documents. Prefer `--from-ref` for a quick feature map; use `--spec-file` when the actual sequence/business flow matters.
 
 See `references/documentation-first.md`.
 
@@ -110,6 +113,22 @@ Treat local indexes as rebuildable acceleration only. Entity JSON and referenced
 7. Do not hide validation errors by deleting or weakening source data/rules during auto-fix.
 
 See `references/local-search-query.md` and `references/project-doctor.md`.
+
+
+## Project consistency and governance
+
+Use `.pm/governance.json` to keep durable project knowledge aligned over time.
+
+1. Treat every project interaction as traceable input, but do not turn every message into a domain entity. Use `request-analyze` and `request-promote` to convert durable requests/questions into Requirement, Feature, Task, Bug, Document, Business Rule, Module, or Decision records only after review.
+2. Record accepted architectural/business/product answers as `decision` entities. Keep context, answer, rationale, consequences, actor/time, and request linkage. Use `decision-supersede` rather than rewriting history.
+3. Documents that use `Document --documents--> Entity` are freshness-tracked. Run `doc-check`; a revision/hash mismatch means the document is stale. Use `doc-reconcile` only after the document has actually been reviewed/updated, or explicitly waive with a note.
+4. Build `docs/traceability.html` from the durable graph. Use it to inspect Module → Feature → Requirement/Rule → Screen/API/DB → Test → Task/Bug/Document/Decision coverage.
+5. Build `docs/project-dashboard.html` as the offline entry page for open requests/questions/decisions, stale docs, quality findings, traceability gaps, inventory, and recent ChangeSets.
+6. Use `ready-check` before implementation and `done-check` after implementation. Under the default policy, `implement` enforces these gates and leaves Tasks blocked/not-done if post-implementation documentation is stale.
+7. When implementation succeeded but completion gates failed, remediate documentation/quality and use `implementation-complete`; do not re-run a completed WorkPlan.
+8. Generated dashboard/traceability reports are derived views and may be rebuilt at any time; JSON entities, request records, documents, ChangeSets, and Decisions remain canonical.
+
+See `references/project-consistency-governance.md`.
 
 ## Quality and traceability
 
@@ -249,9 +268,16 @@ Use `scripts/pm_project.py` for repeatable operations:
 - `init`: initialize a workspace from the template.
 - `idea-bootstrap`: initialize an empty workspace with a structured documentation pack for an idea, without generating code.
 - `request-capture` / `request-list` / `request-show` / `request-close`: persist interaction trace records and documentation links.
+- `request-analyze` / `request-link` / `request-promote`: review traced interactions and connect/promote them into durable project entities.
+- `decision-create` / `decision-resolve` / `decision-supersede`: manage durable project decisions without rewriting accepted history.
+- `doc-check` / `doc-reconcile`: detect stale documentation from linked entity revisions/hashes and record reviewed reconciliation/waivers.
+- `traceability`: generate the JSON + offline HTML feature traceability matrix.
+- `dashboard-build`: regenerate the offline governance dashboard HTML.
+- `ready-check` / `done-check`: evaluate Definition of Ready/Done without mutation.
 - `graph-build`: regenerate the standalone offline HTML entity/relation graph.
 - `diagram-create`: create a Document backed by a standalone HTML flow/feature/business diagram.
-- `implement`: the explicit documentation-gated WorkPlan execution command; automatically drives implementation Task status.
+- `implement`: the explicit documentation-gated WorkPlan execution command; enforces Ready/Done gates and only closes Tasks after consistency checks pass.
+- `implementation-complete`: re-check Definition of Done after remediation and close previously blocked implementation Tasks.
 - `create`: create a schema-valid local entity.
 - `update`: update title, tags, or type-specific data without touching identity/status.
 - `transition`: change status through the configured lifecycle.
@@ -307,6 +333,7 @@ Run `validate` before sync and after bulk/manual edits.
 - `references/entity-catalog.md`: starter entities and their default responsibilities.
 - `references/relationship-mapping.md`: dynamic graph rules and cardinality.
 - `references/quality-traceability.md`: configurable coverage/traceability rules.
+- `references/project-consistency-governance.md`: Decision lifecycle, request promotion, document freshness, Ready/Done gates, traceability matrix, and dashboard behavior.
 - `references/project-intelligence.md`: bounded context retrieval, trace, impact, coverage, orphan/broken-link diagnostics, and health reporting.
 - `references/local-search-query.md`: local full-text index, query expression language, graph-scoped filtering, and saved views.
 - `references/project-doctor.md`: diagnostic categories, safe vs semantic repairs, and audit expectations.

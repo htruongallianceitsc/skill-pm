@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "traceAllInteractions": true,
   "documentationFirst": true,
   "implementationCommand": "implement",
@@ -27,5 +27,18 @@
       "technical-outline",
       "open-questions"
     ]
+  },
+  "definitionOfReadyRequired": true,
+  "definitionOfDoneRequired": true,
+  "reconcileDocumentationAfterImplementation": true,
+  "dashboardHtml": {
+    "enabled": true,
+    "path": "docs/project-dashboard.html",
+    "autoRebuildOnManifest": true
+  },
+  "traceabilityHtml": {
+    "enabled": true,
+    "path": "docs/traceability.html",
+    "autoRebuildOnManifest": true
   }
 }

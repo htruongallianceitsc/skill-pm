@@ -258,6 +258,12 @@ def build_manifest(root: Path) -> Dict[str, Any]:
     })
     build_search_index(root, registry=registry, generated_at=generated, source_fingerprint=source_fingerprint)
     build_project_graph_html(root, registry=registry)
+    try:
+        build_traceability_html(root, registry=registry)
+        build_project_dashboard_html(root, registry=registry)
+    except Exception:
+        # Derived governance views must never make core manifest generation fail.
+        pass
     return manifest
 
 
@@ -1094,6 +1100,7 @@ def workspace_definition(root: Path, config: Dict[str, Any], registry: Dict[str,
         config["storage"].get("views", ".pm/views.json"),
         config["storage"].get("sourceIntelligence", ".pm/source-intelligence.json"),
         config["storage"].get("documentationPolicy", ".pm/documentation-policy.json"),
+        config["storage"].get("governance", ".pm/governance.json"),
         config["storage"].get("workPlanSchema", "schemas/core/workplan.schema.json"),
         "schemas/core/entity.schema.json",
     ]
@@ -1110,7 +1117,7 @@ def workspace_definition(root: Path, config: Dict[str, Any], registry: Dict[str,
 
 
 def allowed_definition_path(relative: str) -> bool:
-    if relative in {".pm/entity-types.json", ".pm/relation-map.json", ".pm/lookups.json", ".pm/quality-rules.json", ".pm/intelligence.json", ".pm/change-management.json", ".pm/agent-workflow.json", ".pm/local-engine.json", ".pm/views.json", ".pm/source-intelligence.json", ".pm/documentation-policy.json"}:
+    if relative in {".pm/entity-types.json", ".pm/relation-map.json", ".pm/lookups.json", ".pm/quality-rules.json", ".pm/intelligence.json", ".pm/change-management.json", ".pm/agent-workflow.json", ".pm/local-engine.json", ".pm/views.json", ".pm/source-intelligence.json", ".pm/documentation-policy.json", ".pm/governance.json"}:
         return True
     return relative in {"schemas/core/entity.schema.json", "schemas/core/workplan.schema.json"} or relative.startswith("schemas/entities/")
 
@@ -5881,13 +5888,24 @@ def cmd_implement(args: argparse.Namespace) -> int:
     _, plan = find_workplan(root, args.plan)
     if policy.get("implementationRequiresApprovedPlan", True) and plan.get("status") != "approved":
         raise ValueError(f"Implementation requires an approved WorkPlan; status={plan.get('status')}")
+
     related = list(plan.get("related") or []) + list(args.related or [])
-    _, registry, _, _ = load_controls(root)
+    ready = ready_check_report(root, args.plan, related, args.allow_undocumented)
+    if not ready.get("passed") and not getattr(args, "waive_ready", False):
+        raise ValueError("Definition of Ready failed; resolve the checks or explicitly use --waive-ready after review: " + json.dumps(ready.get("checks"), ensure_ascii=False))
+
+    config, registry, _, _ = load_controls(root)
     entities, _ = collect_entities(root, registry)
-    related_uids = resolve_refs_to_uids(root, related)
-    doc_uids = [u for u in related_uids if entities.get(u, {}).get("entityType") == "document"]
-    if policy.get("implementationRequiresDocumentation", True) and not doc_uids and not args.allow_undocumented:
-        raise ValueError("Documentation-first policy requires at least one related Document on the WorkPlan/implement command. Add/update documentation before implementation, or explicitly use --allow-undocumented after review.")
+    # Baseline linked documentation before implementation so later entity revisions can make it stale deterministically.
+    for doc_uid in ready.get("documentUids", []):
+        item = document_freshness_item(root, entities.get(doc_uid, {}), entities) if entities.get(doc_uid) else None
+        if item and item.get("status") == "untracked":
+            try:
+                reconcile_document(root, doc_uid, args.actor, "Implementation preflight freshness baseline", False, source="implementation-preflight")
+            except Exception:
+                pass
+    entities, _ = collect_entities(root, registry)
+
     task_uids = []
     for ref in list(args.task or []) + related:
         try:
@@ -5898,6 +5916,7 @@ def cmd_implement(args: argparse.Namespace) -> int:
             pass
     if not task_uids and policy.get("autoCreateImplementationTask", True):
         task_uids = [create_implementation_task(root, f"Implement: {plan.get('title') or plan.get('planId')}", related)]
+
     original = {}
     for uid_value in task_uids:
         entities, _ = collect_entities(root, registry)
@@ -5905,13 +5924,51 @@ def cmd_implement(args: argparse.Namespace) -> int:
         if original[uid_value] in {"todo", "blocked"}:
             set_task_status(root, uid_value, "in_progress")
     build_manifest(root)
+
     ns = copy.copy(args)
     ns.via_implement = True
     ns.force_stale = args.force_stale
     ns.actor = args.actor
     ns.reason = args.reason or "Explicit implementation command"
+    plan_applied = False
     try:
         rc = cmd_plan_execute(ns)
+        plan_applied = True
+        _, completed_plan = find_workplan(root, args.plan)
+        change_set_id = (completed_plan.get("execution") or {}).get("changeSetId")
+        changed_uids = set()
+        if change_set_id:
+            try:
+                _, cs = find_change_set(root, str(change_set_id))
+                changed_uids = {str(c.get("uid")) for c in cs.get("changes", []) if c.get("uid")}
+            except Exception:
+                pass
+
+        # A document changed in the same implementation is assumed to have been intentionally updated;
+        # refresh its source snapshot only after the implementation has succeeded.
+        entities, _ = collect_entities(root, registry)
+        for uid_value in sorted(changed_uids):
+            e = entities.get(uid_value)
+            if e and e.get("entityType") == "document" and document_source_uids(e):
+                try:
+                    reconcile_document(root, uid_value, args.actor, f"Updated during implementation {args.plan}", False, source="post-implementation-reconcile")
+                except Exception:
+                    pass
+        build_manifest(root)
+
+        gate = done_check_report(root, args.plan, task_uids, related, allow_task_in_progress=True, waive_stale_docs=getattr(args, "waive_stale_docs", False))
+        if not gate.get("passed") and not getattr(args, "waive_done", False):
+            for uid_value in task_uids:
+                try:
+                    entities, _ = collect_entities(root, registry)
+                    task = entities.get(uid_value)
+                    if task and task.get("status") == "in_progress":
+                        plan_transition_entity(root, uid_value, task, "blocked", force=False)
+                except Exception:
+                    pass
+            build_manifest(root)
+            raise RuntimeError("Implementation was applied, but Definition of Done failed. Tasks were not closed. Resolve the gate and complete/re-run explicitly: " + json.dumps(gate.get("checks"), ensure_ascii=False))
+
         for uid_value in task_uids:
             entities, _ = collect_entities(root, registry)
             status = entities[uid_value].get("status")
@@ -5920,6 +5977,12 @@ def cmd_implement(args: argparse.Namespace) -> int:
                     plan_transition_entity(root, uid_value, entities[uid_value], "in_progress", force=True)
                     entities, _ = collect_entities(root, registry)
                 plan_transition_entity(root, uid_value, entities[uid_value], "done", force=False)
+        build_manifest(root)
+
+        final_gate = done_check_report(root, args.plan, task_uids, related, allow_task_in_progress=False, waive_stale_docs=getattr(args, "waive_stale_docs", False))
+        if not final_gate.get("passed") and not getattr(args, "waive_done", False):
+            raise RuntimeError("Definition of Done changed after task completion; review required: " + json.dumps(final_gate.get("checks"), ensure_ascii=False))
+
         if args.request:
             rp = request_path(root, args.request)
             if rp.is_file():
@@ -5929,23 +5992,487 @@ def cmd_implement(args: argparse.Namespace) -> int:
                 r["closedAt"] = r["updatedAt"]
                 r["workPlanIds"] = sorted(set((r.get("workPlanIds") or []) + [str(plan.get("planId"))]))
                 r["taskUids"] = sorted(set((r.get("taskUids") or []) + task_uids))
-                r["resultSummary"] = args.reason or "Implementation completed"
+                r["resultSummary"] = args.reason or "Implementation completed and Definition of Done passed"
                 save_json(rp, r)
         build_manifest(root)
-        print(json.dumps({"implemented": True, "planId": plan.get("planId"), "taskUids": task_uids, "taskStatus": "done"}, ensure_ascii=False))
+        print(json.dumps({"implemented": True, "planId": plan.get("planId"), "taskUids": task_uids, "taskStatus": "done", "definitionOfReady": ready, "definitionOfDone": final_gate}, ensure_ascii=False))
         return rc
     except Exception:
-        for uid_value, status in original.items():
-            try:
-                entities, _ = collect_entities(root, registry)
-                task = entities.get(uid_value)
-                if task and task.get("status") != status:
-                    plan_transition_entity(root, uid_value, task, status, force=True)
-            except Exception:
-                pass
-        build_manifest(root)
+        if not plan_applied:
+            for uid_value, status in original.items():
+                try:
+                    entities, _ = collect_entities(root, registry)
+                    task = entities.get(uid_value)
+                    if task and task.get("status") != status:
+                        plan_transition_entity(root, uid_value, task, status, force=True)
+                except Exception:
+                    pass
+            build_manifest(root)
         raise
 
+
+def load_governance(root: Path) -> Dict[str, Any]:
+    config, _, _, _ = load_controls(root)
+    rel = config.get("storage", {}).get("governance", ".pm/governance.json")
+    path = project_path(root, rel)
+    if not path.is_file():
+        return {
+            "schemaVersion": "1.0",
+            "documentationFreshness": {"enabled": True, "trackedRelation": "documents", "blockDoneWhenStale": True},
+            "definitionOfReady": {"enabled": True, "checks": ["approved-plan", "documentation-present", "validation-clean"], "blockOnFailure": True},
+            "definitionOfDone": {"enabled": True, "checks": ["tasks-done", "validation-clean", "documentation-current"], "blockOnFailure": True},
+            "traceability": {"enabled": True, "htmlPath": "docs/traceability.html", "jsonPath": ".pm/reports/traceability.json"},
+            "dashboard": {"enabled": True, "htmlPath": "docs/project-dashboard.html", "recentChangeCount": 12},
+            "requests": {"promotionTargets": ["document", "feature", "requirement", "task", "bug", "decision"]},
+        }
+    return load_json(path)
+
+
+def document_source_uids(entity: Dict[str, Any]) -> List[str]:
+    return [str(r.get("targetUid")) for r in entity.get("relations", []) if r.get("type") == "documents" and r.get("targetUid")]
+
+
+def document_freshness_item(root: Path, doc: Dict[str, Any], entities: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    sources = document_source_uids(doc)
+    snapshot = ((doc.get("data") or {}).get("freshness") or {})
+    snap_by_uid = {str(x.get("uid")): x for x in snapshot.get("sources", []) if isinstance(x, dict) and x.get("uid")}
+    details = []
+    stale = False
+    missing = False
+    for uid_value in sources:
+        target = entities.get(uid_value)
+        snap = snap_by_uid.get(uid_value)
+        if not target or target.get("isDeleted"):
+            missing = True
+            stale = True
+            details.append({"uid": uid_value, "status": "missing", "snapshot": snap})
+            continue
+        current_hash = None
+        try:
+            current_hash = payload_hash(root, target)
+        except Exception:
+            current_hash = sha256_bytes(canonical_json_bytes(target))
+        current_revision = int(target.get("revision", 0))
+        if not snap:
+            state = "untracked"
+            stale = True
+        elif int(snap.get("revision", -1)) != current_revision or (snap.get("payloadHash") and snap.get("payloadHash") != current_hash):
+            state = "stale"
+            stale = True
+        else:
+            state = "current"
+        details.append({"uid": uid_value, "entityType": target.get("entityType"), "title": target.get("title"), "revision": current_revision, "payloadHash": current_hash, "snapshot": snap, "status": state})
+    stored_status = str(snapshot.get("status") or "untracked")
+    if stored_status == "waived":
+        status = "waived"
+    elif not sources:
+        status = "untracked"
+    elif stale:
+        status = "stale"
+    else:
+        status = "current"
+    return {
+        "uid": doc.get("uid"), "code": doc.get("code"), "title": doc.get("title"), "documentType": (doc.get("data") or {}).get("documentType"),
+        "status": status, "reconciledAt": snapshot.get("reconciledAt"), "note": snapshot.get("note"), "sourceCount": len(sources), "missingSource": missing, "sources": details,
+    }
+
+
+def documentation_freshness_report(root: Path, save: bool = True) -> Dict[str, Any]:
+    config, registry, _, _ = load_controls(root)
+    entities, _ = collect_entities(root, registry)
+    rows = [document_freshness_item(root, e, entities) for e in entities.values() if e.get("entityType") == "document" and not e.get("isDeleted")]
+    counts: Dict[str, int] = defaultdict(int)
+    for row in rows:
+        counts[row["status"]] += 1
+    report = {"schemaVersion": "1.0", "generatedAt": now_utc(), "summary": dict(counts), "documents": sorted(rows, key=lambda x: (x.get("status") != "stale", str(x.get("title"))))}
+    if save:
+        save_json(project_path(root, ".pm/reports/document-freshness.json"), report)
+    return report
+
+
+def reconcile_document(root: Path, ref: str, actor: Optional[str], note: Optional[str], waive: bool = False, source: str = "documentation-reconcile") -> Dict[str, Any]:
+    config, registry, _, _ = load_controls(root)
+    entities, paths = collect_entities(root, registry)
+    uid_value, doc = resolve_entity_ref(root, ref, entities=entities, registry=registry)
+    if doc.get("entityType") != "document":
+        raise ValueError(f"Document expected, got {doc.get('entityType')}")
+    before = capture_workspace_records(root)
+    snapshots = []
+    for target_uid in document_source_uids(doc):
+        target = entities.get(target_uid)
+        if not target or target.get("isDeleted"):
+            continue
+        try:
+            digest = payload_hash(root, target)
+        except Exception:
+            digest = sha256_bytes(canonical_json_bytes(target))
+        snapshots.append({"uid": target_uid, "revision": int(target.get("revision", 0)), "payloadHash": digest})
+    doc = copy.deepcopy(doc)
+    doc.setdefault("data", {})["freshness"] = {
+        "status": "waived" if waive else "current",
+        "reconciledAt": now_utc(),
+        "sources": snapshots,
+        "note": note,
+    }
+    doc["revision"] = int(doc.get("revision", 0)) + 1
+    doc["updatedAt"] = now_utc()
+    save_json(paths[uid_value], doc)
+    build_manifest(root)
+    after = capture_workspace_records(root)
+    changes = make_changes(before, after)
+    cs = write_change_set(root, changes, status="applied", source=source, actor=actor, reason=note or ("Documentation freshness waived" if waive else "Documentation reconciled"), related=[uid_value])
+    update_audit_state(root, after)
+    return {"documentUid": uid_value, "freshness": doc["data"]["freshness"], "changeSetId": (cs or {}).get("changeSetId")}
+
+
+def cmd_doc_check(args: argparse.Namespace) -> int:
+    root = Path(args.project).resolve(); require_project(root)
+    report = documentation_freshness_report(root, save=True)
+    if args.document:
+        uid_value, _ = resolve_entity_ref(root, args.document)
+        report["documents"] = [x for x in report["documents"] if x.get("uid") == uid_value]
+    emit_json(report, args.output)
+    return 1 if args.fail_on_stale and any(x.get("status") == "stale" for x in report.get("documents", [])) else 0
+
+
+def cmd_doc_reconcile(args: argparse.Namespace) -> int:
+    root = Path(args.project).resolve(); require_project(root)
+    result = reconcile_document(root, args.document, args.actor, args.note, args.waive)
+    print(json.dumps(result, ensure_ascii=False)); return 0
+
+
+def traceability_report(root: Path, save: bool = True) -> Dict[str, Any]:
+    config, registry, _, _ = load_controls(root)
+    entities, _ = collect_entities(root, registry)
+    active = {u:e for u,e in entities.items() if not e.get("isDeleted")}
+    incoming: Dict[str, List[Tuple[str, Dict[str, Any]]]] = defaultdict(list)
+    for suid, entity in active.items():
+        for rel in entity.get("relations", []):
+            tuid = str(rel.get("targetUid") or "")
+            if tuid:
+                incoming[tuid].append((suid, rel))
+
+    def refs(uids: Iterable[str]) -> List[Dict[str, Any]]:
+        out=[]
+        for u in sorted(set(uids)):
+            e=active.get(u)
+            if e:
+                out.append({"uid":u,"entityType":e.get("entityType"),"code":e.get("code"),"localRef":e.get("localRef"),"title":e.get("title"),"status":e.get("status")})
+        return out
+
+    rows=[]
+    for fuid, feature in sorted(((u,e) for u,e in active.items() if e.get("entityType")=="feature"), key=lambda x: str(x[1].get("title"))):
+        module_uids={str(r.get("targetUid")) for r in feature.get("relations",[]) if r.get("type")=="belongs_to"}
+        req_uids={s for s,r in incoming.get(fuid,[]) if r.get("relation")=="applies_to" and active.get(s,{}).get("entityType")=="requirement"}
+        rule_uids={s for s,r in incoming.get(fuid,[]) if r.get("relation")=="constrains" and active.get(s,{}).get("entityType")=="business-rule"}
+        for ruid in req_uids:
+            rule_uids.update({s for s,r in incoming.get(ruid,[]) if r.get("relation")=="constrains" and active.get(s,{}).get("entityType")=="business-rule"})
+        screen_uids={s for s,r in incoming.get(fuid,[]) if r.get("relation")=="supports" and active.get(s,{}).get("entityType")=="screen"}
+        api_uids={s for s,r in incoming.get(fuid,[]) if r.get("relation")=="supports" and active.get(s,{}).get("entityType")=="api"}
+        db_uids={s for s,r in incoming.get(fuid,[]) if r.get("relation")=="supports" and active.get(s,{}).get("entityType")=="database-table"}
+        for auid in api_uids:
+            db_uids.update({s for s,r in incoming.get(auid,[]) if r.get("relation")=="supports" and active.get(s,{}).get("entityType")=="database-table"})
+        verify_targets={fuid}|req_uids|rule_uids
+        test_uids=set()
+        for target in verify_targets:
+            test_uids.update({s for s,r in incoming.get(target,[]) if r.get("relation")=="verifies" and active.get(s,{}).get("entityType")=="test-case"})
+        script_uids=set()
+        for tuid in test_uids:
+            script_uids.update({s for s,r in incoming.get(tuid,[]) if r.get("relation")=="automates" and active.get(s,{}).get("entityType")=="test-script"})
+        scope={fuid}|req_uids|rule_uids|screen_uids|api_uids|db_uids|test_uids|script_uids
+        task_uids=set(); bug_uids=set(); doc_uids=set(); decision_uids=set()
+        for target in scope:
+            for s,r in incoming.get(target,[]):
+                typ=active.get(s,{}).get("entityType")
+                if typ=="task" and r.get("relation") in {"relates_to","implements"}: task_uids.add(s)
+                elif typ=="bug" and r.get("relation")=="affects": bug_uids.add(s)
+                elif typ=="document" and r.get("relation")=="documents": doc_uids.add(s)
+                elif typ=="decision" and r.get("relation") in {"relates_to","decides"}: decision_uids.add(s)
+        rows.append({
+            "feature": refs([fuid])[0], "modules": refs(module_uids), "requirements": refs(req_uids), "businessRules": refs(rule_uids),
+            "screens": refs(screen_uids), "apis": refs(api_uids), "databaseTables": refs(db_uids), "testCases": refs(test_uids), "testScripts": refs(script_uids),
+            "documents": refs(doc_uids), "decisions": refs(decision_uids), "tasks": refs(task_uids), "bugs": refs(bug_uids),
+        })
+    summary={
+        "featureCount":len(rows),
+        "featuresWithoutModule":sum(1 for r in rows if not r["modules"]),
+        "featuresWithoutRequirements":sum(1 for r in rows if not r["requirements"]),
+        "featuresWithoutDocuments":sum(1 for r in rows if not r["documents"]),
+        "featuresWithoutTests":sum(1 for r in rows if not r["testCases"]),
+    }
+    report={"schemaVersion":"1.0","generatedAt":now_utc(),"summary":summary,"rows":rows}
+    if save:
+        gov=load_governance(root); rel=(gov.get("traceability") or {}).get("jsonPath", ".pm/reports/traceability.json")
+        save_json(project_path(root,rel),report)
+    return report
+
+
+def _cell_refs(items: List[Dict[str, Any]]) -> str:
+    if not items: return "<span class='missing'>—</span>"
+    return "<br>".join(html.escape(str(x.get("code") or x.get("localRef") or x.get("title"))) + " · " + html.escape(str(x.get("title") or "")) for x in items)
+
+
+def build_traceability_html(root: Path, registry: Optional[Dict[str, Any]] = None) -> Optional[Path]:
+    gov=load_governance(root); cfg=gov.get("traceability") or {}
+    if not cfg.get("enabled",True): return None
+    report=traceability_report(root, save=True)
+    headers=[("Module","modules"),("Feature","feature"),("Requirements","requirements"),("Rules","businessRules"),("Screens","screens"),("APIs","apis"),("DB","databaseTables"),("Tests","testCases"),("Scripts","testScripts"),("Docs","documents"),("Decisions","decisions"),("Tasks","tasks"),("Bugs","bugs")]
+    rows_html=[]
+    for row in report["rows"]:
+        cells=[]
+        for _,key in headers:
+            value=row.get(key)
+            if key=="feature": value=[value] if value else []
+            cells.append("<td>"+_cell_refs(value or [])+"</td>")
+        rows_html.append("<tr>"+"".join(cells)+"</tr>")
+    s=report["summary"]
+    page="<!doctype html><html><head><meta charset='utf-8'><title>Project Traceability</title><style>body{font-family:Arial,sans-serif;margin:22px;color:#202124}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #ddd;padding:7px;vertical-align:top}th{background:#f5f7fb;position:sticky;top:0}.cards{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.card{border:1px solid #ddd;border-radius:8px;padding:10px 14px}.missing{color:#b3261e}</style></head><body>"+f"<h1>Project Traceability Matrix</h1><p>Generated {html.escape(report['generatedAt'])}</p><div class='cards'><div class='card'>Features <b>{s['featureCount']}</b></div><div class='card'>No module <b>{s['featuresWithoutModule']}</b></div><div class='card'>No requirements <b>{s['featuresWithoutRequirements']}</b></div><div class='card'>No docs <b>{s['featuresWithoutDocuments']}</b></div><div class='card'>No tests <b>{s['featuresWithoutTests']}</b></div></div>"+"<table><thead><tr>"+"".join(f"<th>{html.escape(h)}</th>" for h,_ in headers)+"</tr></thead><tbody>"+"".join(rows_html)+"</tbody></table></body></html>"
+    path=project_path(root,str(cfg.get("htmlPath") or "docs/traceability.html")); path.parent.mkdir(parents=True,exist_ok=True); path.write_text(page,encoding="utf-8"); return path
+
+
+def cmd_traceability(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); require_project(root)
+    report=traceability_report(root,save=True); path=build_traceability_html(root)
+    if args.output: emit_json(report,args.output)
+    else: print(json.dumps({"summary":report["summary"],"html":path.relative_to(root).as_posix() if path else None},ensure_ascii=False))
+    return 0
+
+
+def dashboard_report(root: Path) -> Dict[str, Any]:
+    _,registry,_,_=load_controls(root); entities,_=collect_entities(root,registry)
+    active=[e for e in entities.values() if not e.get("isDeleted")]
+    by_type:Dict[str,int]=defaultdict(int); by_status:Dict[str,int]=defaultdict(int)
+    for e in active: by_type[str(e.get("entityType"))]+=1; by_status[f"{e.get('entityType')}:{e.get('status')}"]+=1
+    reqs=[d for _,d in load_requests(root)]; open_reqs=[r for r in reqs if r.get("status") not in {"completed","closed","rejected"}]
+    open_questions=[r for r in open_reqs if r.get("kind")=="question"]
+    decisions=[e for e in active if e.get("entityType")=="decision"]; open_decisions=[e for e in decisions if e.get("status")=="proposed"]
+    freshness=documentation_freshness_report(root,save=True); quality=quality_report(root); trace=traceability_report(root,save=True)
+    changes=[]
+    for _,cs in sorted(load_change_sets(root), key=lambda x: str(x[1].get("createdAt") or ""), reverse=True)[:int((load_governance(root).get("dashboard") or {}).get("recentChangeCount",12))]:
+        changes.append({"changeSetId":cs.get("changeSetId"),"createdAt":cs.get("createdAt"),"source":cs.get("source"),"reason":cs.get("reason"),"actor":(cs.get("actor") or {}).get("id"),"changes":len(cs.get("changes") or [])})
+    return {"schemaVersion":"1.0","generatedAt":now_utc(),"entityCounts":dict(sorted(by_type.items())),"statusCounts":dict(sorted(by_status.items())),"openRequests":len(open_reqs),"openQuestions":len(open_questions),"openDecisions":len(open_decisions),"documentFreshness":freshness.get("summary",{}),"quality":quality.get("summary",{}),"traceability":trace.get("summary",{}),"recentChanges":changes}
+
+
+def build_project_dashboard_html(root: Path, registry: Optional[Dict[str, Any]] = None) -> Optional[Path]:
+    gov=load_governance(root); cfg=gov.get("dashboard") or {}
+    if not cfg.get("enabled",True): return None
+    report=dashboard_report(root)
+    cards=[]
+    for label,value in [("Open requests",report["openRequests"]),("Open questions",report["openQuestions"]),("Open decisions",report["openDecisions"]),("Stale docs",report["documentFreshness"].get("stale",0)),("Quality warnings",report["quality"].get("warning",0)),("Quality errors",report["quality"].get("error",0))]: cards.append(f"<div class='card'><span>{html.escape(label)}</span><b>{value}</b></div>")
+    counts="".join(f"<tr><td>{html.escape(k)}</td><td>{v}</td></tr>" for k,v in report["entityCounts"].items())
+    changes="".join(f"<tr><td>{html.escape(str(c.get('createdAt') or ''))}</td><td>{html.escape(str(c.get('changeSetId') or ''))}</td><td>{html.escape(str(c.get('actor') or ''))}</td><td>{html.escape(str(c.get('reason') or ''))}</td><td>{c.get('changes')}</td></tr>" for c in report["recentChanges"])
+    t=report["traceability"]
+    page="<!doctype html><html><head><meta charset='utf-8'><title>Project Dashboard</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#202124}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.card{border:1px solid #ddd;border-radius:10px;padding:14px}.card span{display:block;color:#666;font-size:12px}.card b{font-size:28px}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #ddd;padding:7px;text-align:left;font-size:12px}th{background:#f5f7fb}.links a{margin-right:14px}</style></head><body>"+f"<h1>Project Dashboard</h1><p>Generated {html.escape(report['generatedAt'])}</p><div class='links'><a href='project-graph.html'>Knowledge graph</a><a href='traceability.html'>Traceability matrix</a></div><div class='cards'>{''.join(cards)}</div><h2>Entity inventory</h2><table><tr><th>Type</th><th>Count</th></tr>{counts}</table><h2>Traceability</h2><p>Features: <b>{t.get('featureCount',0)}</b> · without module: <b>{t.get('featuresWithoutModule',0)}</b> · without requirements: <b>{t.get('featuresWithoutRequirements',0)}</b> · without docs: <b>{t.get('featuresWithoutDocuments',0)}</b> · without tests: <b>{t.get('featuresWithoutTests',0)}</b></p><h2>Recent changes</h2><table><tr><th>At</th><th>ChangeSet</th><th>Actor</th><th>Reason</th><th>Entities</th></tr>{changes}</table></body></html>"
+    path=project_path(root,str(cfg.get("htmlPath") or "docs/project-dashboard.html")); path.parent.mkdir(parents=True,exist_ok=True); path.write_text(page,encoding="utf-8"); save_json(project_path(root,".pm/reports/dashboard.json"),report); return path
+
+
+def cmd_dashboard_build(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); require_project(root); path=build_project_dashboard_html(root)
+    if not path: raise ValueError("Dashboard generation is disabled")
+    print(json.dumps({"path":path.relative_to(root).as_posix(),"report":".pm/reports/dashboard.json"},ensure_ascii=False)); return 0
+
+
+def request_link_entity(root: Path, rid: str, uid_value: str, field: str = "linkedEntities") -> Dict[str, Any]:
+    rp=request_path(root,rid)
+    if not rp.is_file(): raise KeyError(f"Request trace not found: {rid}")
+    doc=load_json(rp); values=list(doc.get(field) or [])
+    if uid_value not in values: values.append(uid_value)
+    doc[field]=values; doc["updatedAt"]=now_utc(); save_json(rp,doc); return doc
+
+
+def cmd_request_analyze(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); require_project(root); rp=request_path(root,args.request)
+    if not rp.is_file(): raise KeyError(f"Request trace not found: {args.request}")
+    req=load_json(rp); gov=load_governance(root); rconf=gov.get("requests") or {}; default=(rconf.get("defaultByKind") or {}).get(req.get("kind"),"requirement")
+    result={"request":req,"defaultPromotionTarget":default,"allowedTargets":rconf.get("promotionTargets",[]),"guidance":"Review the traced interaction and promote only when it represents durable project knowledge or work. Questions normally become Decisions only after an answer is accepted."}
+    emit_json(result,args.output); return 0
+
+
+def cmd_request_link(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); require_project(root); uid_value,_=resolve_entity_ref(root,args.ref); doc=request_link_entity(root,args.request,uid_value)
+    print(json.dumps({"requestId":args.request,"linkedEntity":uid_value,"linkedEntities":doc.get("linkedEntities",[])},ensure_ascii=False)); return 0
+
+
+def cmd_request_promote(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); require_project(root); rp=request_path(root,args.request)
+    if not rp.is_file(): raise KeyError(f"Request trace not found: {args.request}")
+    req=load_json(rp); gov=load_governance(root); allowed=set((gov.get("requests") or {}).get("promotionTargets") or [])
+    target=args.to
+    if target not in allowed: raise ValueError(f"Promotion target {target!r} is not allowed; choose from {sorted(allowed)}")
+    data=json.loads(args.data_json) if args.data_json else {}
+    title=args.title or str(req.get("title") or req.get("text") or args.request)[:120]
+    before=capture_workspace_records(root)
+    if target=="document":
+        body=f"# {title}\n\nSource request: `{args.request}`\n\n{req.get('text') or ''}\n"
+        entity=create_document_with_file(root,title,"request-analysis","request-analysis.md",body,summary=str(req.get("text") or "")[:500],tags=["request-promotion"],extra_data={"requestId":args.request})
+    else:
+        if target=="decision":
+            base={"decisionType":"general","context":req.get("text"),"decision":data.pop("decision",None),"rationale":data.pop("rationale",None),"consequences":[],"requestId":args.request,"decidedBy":None,"decidedAt":None}; base.update(data); data=base
+        elif target=="requirement": data={"source":args.request,**data}
+        entity=create_import_entity(root,target,title,data,tags=["request-promotion"])
+    for ref in args.related or []:
+        try:
+            tuid,_=resolve_entity_ref(root,ref)
+            relation="relates_to" if target in {"task","decision"} else ("affects" if target=="bug" else None)
+            if relation: add_relation_direct(root,entity["uid"],relation,tuid)
+        except Exception:
+            pass
+    req.setdefault("promotedEntities",[])
+    if entity["uid"] not in req["promotedEntities"]: req["promotedEntities"].append(entity["uid"])
+    req["status"]="promoted" if req.get("status")=="open" else req.get("status")
+    req["updatedAt"]=now_utc(); save_json(rp,req); build_manifest(root)
+    after=capture_workspace_records(root); cs=write_change_set(root,make_changes(before,after),status="applied",source="request-promotion",actor=args.actor,reason=args.reason or f"Promote {args.request} to {target}",related=[args.request,entity["uid"]]); update_audit_state(root,after)
+    print(json.dumps({"requestId":args.request,"entityUid":entity["uid"],"entityType":target,"changeSetId":(cs or {}).get("changeSetId")},ensure_ascii=False)); return 0
+
+
+def cmd_decision_create(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); require_project(root); before=capture_workspace_records(root)
+    data={"decisionType":args.type,"context":args.context,"decision":args.decision,"rationale":args.rationale,"consequences":args.consequence or [],"requestId":args.request,"decidedBy":None,"decidedAt":None}
+    entity=create_import_entity(root,"decision",args.title,data,tags=args.tag or ["decision"])
+    for ref in args.related or []:
+        uid,_=resolve_entity_ref(root,ref); add_relation_direct(root,entity["uid"],"relates_to",uid)
+    if args.request:
+        try: request_link_entity(root,args.request,entity["uid"],"promotedEntities")
+        except Exception: pass
+    build_manifest(root); after=capture_workspace_records(root); cs=write_change_set(root,make_changes(before,after),status="applied",source="decision",actor=args.actor,reason=args.rationale or args.decision or "Create decision",related=[entity["uid"]]); update_audit_state(root,after)
+    print(json.dumps({"decisionUid":entity["uid"],"status":entity["status"],"changeSetId":(cs or {}).get("changeSetId")},ensure_ascii=False)); return 0
+
+
+def cmd_decision_resolve(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); config,registry,_,_=load_controls(root); entities,paths=collect_entities(root,registry); uid,e=resolve_entity_ref(root,args.decision,entities=entities,registry=registry)
+    if e.get("entityType")!="decision": raise ValueError("decision-resolve requires a Decision entity")
+    before=capture_workspace_records(root); e=copy.deepcopy(e); e.setdefault("data",{})["decision"]=args.answer or e.get("data",{}).get("decision"); e["data"]["rationale"]=args.rationale or e["data"].get("rationale"); e["data"]["decidedBy"]=args.actor; e["data"]["decidedAt"]=now_utc(); e["revision"]=int(e.get("revision",0))+1; e["updatedAt"]=now_utc(); save_json(paths[uid],e); plan_transition_entity(root,uid,e,args.status,force=False)
+    request_id=(e.get("data") or {}).get("requestId")
+    if request_id:
+        try:
+            rp=request_path(root,str(request_id))
+            if rp.is_file():
+                req=load_json(rp); req["status"]="completed" if args.status=="accepted" else "closed"; req["resultSummary"]=args.answer or args.rationale or f"Decision {args.status}"; req["closedAt"]=now_utc(); req["updatedAt"]=req["closedAt"]; save_json(rp,req)
+        except Exception:
+            pass
+    build_manifest(root); after=capture_workspace_records(root); cs=write_change_set(root,make_changes(before,after),status="applied",source="decision",actor=args.actor,reason=args.rationale or args.answer or f"Decision {args.status}",related=[uid]); update_audit_state(root,after)
+    print(json.dumps({"decisionUid":uid,"status":args.status,"changeSetId":(cs or {}).get("changeSetId")},ensure_ascii=False)); return 0
+
+
+def cmd_decision_supersede(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); _,registry,_,_=load_controls(root); entities,_=collect_entities(root,registry); old_uid,old=resolve_entity_ref(root,args.decision,entities=entities,registry=registry)
+    if old.get("entityType")!="decision": raise ValueError("decision-supersede requires a Decision entity")
+    before=capture_workspace_records(root); data={"decisionType":old.get("data",{}).get("decisionType","general"),"context":args.context or old.get("data",{}).get("context"),"decision":args.answer,"rationale":args.rationale,"consequences":args.consequence or [],"requestId":old.get("data",{}).get("requestId"),"decidedBy":args.actor,"decidedAt":now_utc()}
+    new=create_import_entity(root,"decision",args.title or f"Supersede: {old.get('title')}",data,tags=["decision","supersedes"]); add_relation_direct(root,new["uid"],"supersedes",old_uid)
+    for r in old.get("relations",[]):
+        if r.get("type") in {"relates_to","decides"} and r.get("targetUid") in entities:
+            try: add_relation_direct(root,new["uid"],r.get("type"),r.get("targetUid"))
+            except Exception: pass
+    plan_transition_entity(root,old_uid,old,"superseded",force=False); entities,_=collect_entities(root,registry); plan_transition_entity(root,new["uid"],entities[new["uid"]],"accepted",force=False); build_manifest(root); after=capture_workspace_records(root); cs=write_change_set(root,make_changes(before,after),status="applied",source="decision",actor=args.actor,reason=args.rationale or "Supersede decision",related=[old_uid,new["uid"]]); update_audit_state(root,after)
+    print(json.dumps({"superseded":old_uid,"decisionUid":new["uid"],"status":"accepted","changeSetId":(cs or {}).get("changeSetId")},ensure_ascii=False)); return 0
+
+
+def workplan_scope_uids(root: Path, plan: Dict[str, Any], extra_refs: Optional[List[str]] = None) -> List[str]:
+    refs=list(plan.get("related") or [])+list(plan.get("contextRefs") or [])+list(extra_refs or [])
+    for obj in plan.get("baseObjects") or []:
+        if isinstance(obj,dict) and obj.get("uid"): refs.append(str(obj.get("uid")))
+    for step in plan.get("steps") or []:
+        for key in ("targetRef","sourceRef"):
+            value=step.get(key)
+            if value and not str(value).startswith("$"): refs.append(str(value))
+    return resolve_refs_to_uids(root,refs)
+
+
+def documents_for_scope(root: Path, scope_uids: Iterable[str], entities: Optional[Dict[str,Dict[str,Any]]]=None) -> List[str]:
+    _,registry,_,_=load_controls(root); entities=entities or collect_entities(root,registry)[0]; scope=set(scope_uids); out=[]
+    for uid,e in entities.items():
+        if e.get("entityType")!="document" or e.get("isDeleted"): continue
+        if any(r.get("type")=="documents" and r.get("targetUid") in scope for r in e.get("relations",[])): out.append(uid)
+    return out
+
+
+def open_related_questions(root: Path, scope_uids: Iterable[str]) -> List[Dict[str,Any]]:
+    scope=set(scope_uids); result=[]
+    for _,r in load_requests(root):
+        if r.get("kind")!="question" or r.get("status") in {"completed","closed","rejected"}: continue
+        related=set(r.get("linkedEntities") or [])|set(r.get("promotedEntities") or [])|set(r.get("relatedEntityUids") or [])|set(r.get("documentUids") or [])
+        if related & scope: result.append(r)
+    return result
+
+
+def ready_check_report(root: Path, plan_ref: str, extra_refs: Optional[List[str]]=None, allow_undocumented: bool=False) -> Dict[str,Any]:
+    _,plan=find_workplan(root,plan_ref); _,registry,_,_=load_controls(root); entities,_=collect_entities(root,registry); scope=workplan_scope_uids(root,plan,extra_refs); docs=documents_for_scope(root,scope,entities)
+    checks=[]
+    checks.append({"id":"approved-plan","passed":plan.get("status")=="approved","detail":f"status={plan.get('status')}"})
+    checks.append({"id":"documentation-present","passed":bool(docs) or allow_undocumented,"detail":{"documentUids":docs,"waived":bool(allow_undocumented and not docs)}})
+    questions=open_related_questions(root,scope); checks.append({"id":"no-related-open-questions","passed":not questions,"detail":[q.get("requestId") for q in questions]})
+    errors=validate_project(root); checks.append({"id":"validation-clean","passed":not errors,"detail":errors[:20]})
+    return {"schemaVersion":"1.0","generatedAt":now_utc(),"planId":plan.get("planId"),"scopeUids":scope,"documentUids":docs,"passed":all(c["passed"] for c in checks),"checks":checks}
+
+
+def cmd_ready_check(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); require_project(root); report=ready_check_report(root,args.plan,args.related,args.allow_undocumented); emit_json(report,args.output); return 0 if report["passed"] else 1
+
+
+def done_check_report(root: Path, plan_ref: str, task_uids: Optional[List[str]]=None, extra_refs: Optional[List[str]]=None, allow_task_in_progress: bool=False, waive_stale_docs: bool=False) -> Dict[str,Any]:
+    _,plan=find_workplan(root,plan_ref); _,registry,_,_=load_controls(root); entities,_=collect_entities(root,registry); scope=set(workplan_scope_uids(root,plan,extra_refs))
+    execution=(plan.get("execution") or {}); outputs=execution.get("outputs") or {}; scope.update(v.get("uid") for v in (outputs.get("steps") or {}).values() if isinstance(v,dict) and v.get("uid")); scope.discard(None)
+    docs=documents_for_scope(root,scope,entities); freshness=documentation_freshness_report(root,save=True); by_doc={x.get("uid"):x for x in freshness.get("documents",[])}; stale=[by_doc[u] for u in docs if u in by_doc and by_doc[u].get("status") in {"stale","untracked"}]
+    tasks=[]
+    for uid in task_uids or []:
+        e=entities.get(uid)
+        if e and e.get("entityType")=="task": tasks.append(e)
+    task_ok=all(t.get("status")=="done" or (allow_task_in_progress and t.get("status")=="in_progress") for t in tasks)
+    validation=validate_project(root); quality=quality_report(root); blocking=[f for f in quality.get("findings",[]) if f.get("severity")=="error"]
+    checks=[
+      {"id":"tasks-done","passed":task_ok,"detail":[{"uid":t.get("uid"),"status":t.get("status")} for t in tasks]},
+      {"id":"validation-clean","passed":not validation,"detail":validation[:20]},
+      {"id":"no-blocking-quality","passed":not blocking,"detail":blocking[:20]},
+      {"id":"documentation-current","passed":not stale or waive_stale_docs,"detail":{"staleDocuments":[x.get("uid") for x in stale],"waived":bool(waive_stale_docs and stale)}},
+    ]
+    return {"schemaVersion":"1.0","generatedAt":now_utc(),"planId":plan.get("planId"),"scopeUids":sorted(scope),"documentUids":docs,"passed":all(c["passed"] for c in checks),"checks":checks}
+
+
+def cmd_done_check(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); require_project(root); task_uids=resolve_refs_to_uids(root,args.task or []); report=done_check_report(root,args.plan,task_uids,args.related,False,args.waive_stale_docs); emit_json(report,args.output); return 0 if report["passed"] else 1
+
+def implementation_task_candidates(root: Path, plan: Dict[str, Any], explicit: Optional[List[str]] = None) -> List[str]:
+    _,registry,_,_=load_controls(root); entities,_=collect_entities(root,registry); out=[]
+    for ref in explicit or []:
+        try:
+            uid,e=resolve_entity_ref(root,ref,entities=entities,registry=registry)
+            if e.get("entityType")=="task" and uid not in out: out.append(uid)
+        except Exception: pass
+    if out: return out
+    expected=f"Implement: {plan.get('title') or plan.get('planId')}"
+    scope=set(workplan_scope_uids(root,plan,[]))
+    for uid,e in entities.items():
+        if e.get("entityType")!="task" or e.get("isDeleted"): continue
+        linked={str(r.get("targetUid")) for r in e.get("relations",[]) if r.get("type")=="relates_to"}
+        if e.get("title")==expected or ((e.get("tags") and "implementation" in e.get("tags")) and linked & scope):
+            if uid not in out: out.append(uid)
+    return out
+
+
+def cmd_implementation_complete(args: argparse.Namespace) -> int:
+    root=Path(args.project).resolve(); require_project(root); _,plan=find_workplan(root,args.plan)
+    if plan.get("status")!="completed": raise ValueError(f"WorkPlan must already be completed; status={plan.get('status')}")
+    task_uids=implementation_task_candidates(root,plan,args.task)
+    gate=done_check_report(root,args.plan,[],args.related,allow_task_in_progress=True,waive_stale_docs=args.waive_stale_docs)
+    non_task=[c for c in gate.get("checks",[]) if c.get("id")!="tasks-done"]
+    if not all(c.get("passed") for c in non_task) and not args.waive_done:
+        raise ValueError("Definition of Done remediation is still incomplete: "+json.dumps(non_task,ensure_ascii=False))
+    _,registry,_,_=load_controls(root)
+    for uid in task_uids:
+        entities,_=collect_entities(root,registry); task=entities.get(uid)
+        if not task: continue
+        if task.get("status")!="done":
+            if task.get("status")!="in_progress":
+                plan_transition_entity(root,uid,task,"in_progress",force=True); entities,_=collect_entities(root,registry); task=entities[uid]
+            plan_transition_entity(root,uid,task,"done",force=False)
+    build_manifest(root)
+    final=done_check_report(root,args.plan,task_uids,args.related,False,args.waive_stale_docs)
+    if not final.get("passed") and not args.waive_done: raise ValueError("Definition of Done still failed after task completion: "+json.dumps(final.get("checks"),ensure_ascii=False))
+    if args.request:
+        rp=request_path(root,args.request)
+        if rp.is_file():
+            r=load_json(rp); r["status"]="completed"; r["closedAt"]=now_utc(); r["updatedAt"]=r["closedAt"]; r["resultSummary"]=args.reason or "Implementation completion gate passed"; save_json(rp,r)
+    print(json.dumps({"completed":True,"planId":plan.get("planId"),"taskUids":task_uids,"definitionOfDone":final},ensure_ascii=False)); return 0
 
 def add_change_meta_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--actor", default=None, help="Actor id; prefix AI actors with ai:, e.g. ai:codex")
@@ -6002,6 +6529,104 @@ def make_parser() -> argparse.ArgumentParser:
     s.add_argument("--summary", required=True)
     s.set_defaults(func=cmd_request_close)
 
+    s = sub.add_parser("request-analyze", help="Analyze a traced request/question and show allowed durable promotion targets")
+    s.add_argument("--project", required=True)
+    s.add_argument("--request", required=True)
+    s.add_argument("--output", default=None)
+    s.set_defaults(func=cmd_request_analyze)
+
+    s = sub.add_parser("request-link", help="Link an existing project entity to a traced request/question")
+    s.add_argument("--project", required=True)
+    s.add_argument("--request", required=True)
+    s.add_argument("--ref", required=True)
+    s.set_defaults(func=cmd_request_link)
+
+    s = sub.add_parser("request-promote", help="Promote a traced interaction into durable project knowledge/work")
+    s.add_argument("--project", required=True)
+    s.add_argument("--request", required=True)
+    s.add_argument("--to", required=True, choices=["document","module","feature","requirement","business-rule","task","bug","decision"])
+    s.add_argument("--title", default=None)
+    s.add_argument("--data-json", default=None)
+    s.add_argument("--related", action="append")
+    s.add_argument("--actor", default="ai:agent")
+    s.add_argument("--reason", default=None)
+    s.set_defaults(func=cmd_request_promote)
+
+    s = sub.add_parser("decision-create", help="Create a durable project decision with rationale and optional scope links")
+    s.add_argument("--project", required=True)
+    s.add_argument("--title", required=True)
+    s.add_argument("--type", default="general")
+    s.add_argument("--context", default=None)
+    s.add_argument("--decision", default=None)
+    s.add_argument("--rationale", default=None)
+    s.add_argument("--consequence", action="append")
+    s.add_argument("--request", default=None)
+    s.add_argument("--related", action="append")
+    s.add_argument("--tag", action="append")
+    s.add_argument("--actor", default="user")
+    s.set_defaults(func=cmd_decision_create)
+
+    s = sub.add_parser("decision-resolve", help="Accept or reject a proposed decision")
+    s.add_argument("--project", required=True)
+    s.add_argument("--decision", required=True)
+    s.add_argument("--status", choices=["accepted","rejected"], required=True)
+    s.add_argument("--answer", default=None)
+    s.add_argument("--rationale", default=None)
+    s.add_argument("--actor", default="user")
+    s.set_defaults(func=cmd_decision_resolve)
+
+    s = sub.add_parser("decision-supersede", help="Create a replacement accepted decision and supersede an older one")
+    s.add_argument("--project", required=True)
+    s.add_argument("--decision", required=True)
+    s.add_argument("--title", default=None)
+    s.add_argument("--context", default=None)
+    s.add_argument("--answer", required=True)
+    s.add_argument("--rationale", required=True)
+    s.add_argument("--consequence", action="append")
+    s.add_argument("--actor", default="user")
+    s.set_defaults(func=cmd_decision_supersede)
+
+    s = sub.add_parser("doc-check", help="Check linked documentation freshness against entity revisions and payload hashes")
+    s.add_argument("--project", required=True)
+    s.add_argument("--document", default=None)
+    s.add_argument("--fail-on-stale", action="store_true")
+    s.add_argument("--output", default=None)
+    s.set_defaults(func=cmd_doc_check)
+
+    s = sub.add_parser("doc-reconcile", help="Mark a document reconciled with the current revisions of entities it documents")
+    s.add_argument("--project", required=True)
+    s.add_argument("--document", required=True)
+    s.add_argument("--note", default=None)
+    s.add_argument("--waive", action="store_true")
+    s.add_argument("--actor", default="user")
+    s.set_defaults(func=cmd_doc_reconcile)
+
+    s = sub.add_parser("traceability", help="Build JSON and standalone HTML feature traceability matrix")
+    s.add_argument("--project", required=True)
+    s.add_argument("--output", default=None)
+    s.set_defaults(func=cmd_traceability)
+
+    s = sub.add_parser("dashboard-build", help="Build standalone local project governance dashboard HTML")
+    s.add_argument("--project", required=True)
+    s.set_defaults(func=cmd_dashboard_build)
+
+    s = sub.add_parser("ready-check", help="Evaluate Definition of Ready for an approved WorkPlan")
+    s.add_argument("--project", required=True)
+    s.add_argument("--plan", required=True)
+    s.add_argument("--related", action="append")
+    s.add_argument("--allow-undocumented", action="store_true")
+    s.add_argument("--output", default=None)
+    s.set_defaults(func=cmd_ready_check)
+
+    s = sub.add_parser("done-check", help="Evaluate Definition of Done for a WorkPlan without mutating it")
+    s.add_argument("--project", required=True)
+    s.add_argument("--plan", required=True)
+    s.add_argument("--task", action="append")
+    s.add_argument("--related", action="append")
+    s.add_argument("--waive-stale-docs", action="store_true")
+    s.add_argument("--output", default=None)
+    s.set_defaults(func=cmd_done_check)
+
     s = sub.add_parser("graph-build", help="Regenerate the standalone local HTML knowledge graph")
     s.add_argument("--project", required=True)
     s.set_defaults(func=cmd_graph_build)
@@ -6023,10 +6648,24 @@ def make_parser() -> argparse.ArgumentParser:
     s.add_argument("--task", action="append")
     s.add_argument("--related", action="append")
     s.add_argument("--allow-undocumented", action="store_true")
+    s.add_argument("--waive-ready", action="store_true", help="Explicitly waive failing Definition of Ready checks after review")
+    s.add_argument("--waive-done", action="store_true", help="Explicitly waive failing Definition of Done checks after review")
+    s.add_argument("--waive-stale-docs", action="store_true", help="Allow completion with stale documentation after explicit review")
     s.add_argument("--force-stale", action="store_true")
     s.add_argument("--actor", default="ai:agent")
     s.add_argument("--reason", default=None)
     s.set_defaults(func=cmd_implement)
+
+    s = sub.add_parser("implementation-complete", help="Re-check Definition of Done after remediation and close implementation tasks")
+    s.add_argument("--project", required=True)
+    s.add_argument("--plan", required=True)
+    s.add_argument("--request", default=None)
+    s.add_argument("--task", action="append")
+    s.add_argument("--related", action="append")
+    s.add_argument("--waive-stale-docs", action="store_true")
+    s.add_argument("--waive-done", action="store_true")
+    s.add_argument("--reason", default=None)
+    s.set_defaults(func=cmd_implementation_complete)
 
     s = sub.add_parser("create", help="Create a local entity")
     s.add_argument("--project", required=True)

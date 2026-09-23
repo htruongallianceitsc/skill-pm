@@ -13,7 +13,13 @@
           "documentType": "general",
           "owner": null,
           "summary": null,
-          "audience": []
+          "audience": [],
+          "freshness": {
+            "status": "untracked",
+            "reconciledAt": null,
+            "sources": [],
+            "note": null
+          }
         },
         "content": []
       },
@@ -96,7 +102,9 @@
                 "data.sourcePath",
                 "data.diagramKind",
                 "data.requestId",
-                "data.relatedRef"
+                "data.relatedRef",
+                "data.freshness.status",
+                "data.freshness.reconciledAt"
               ]
             }
           ]
@@ -1398,6 +1406,122 @@
                 "data.enabled",
                 "data.testCount",
                 "data.sourcePath"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "decision": {
+      "displayName": "Decision",
+      "folder": "entities/decisions",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "DEC",
+      "category": "governance",
+      "description": "Recorded project decision or answered design/business question with rationale and lifecycle.",
+      "defaults": {
+        "status": "proposed",
+        "data": {
+          "decisionType": "general",
+          "context": null,
+          "decision": null,
+          "rationale": null,
+          "consequences": [],
+          "requestId": null,
+          "decidedBy": null,
+          "decidedAt": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/decision.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "proposed",
+        "statuses": {
+          "proposed": {
+            "label": "Proposed",
+            "terminal": false
+          },
+          "accepted": {
+            "label": "Accepted",
+            "terminal": false
+          },
+          "rejected": {
+            "label": "Rejected",
+            "terminal": true
+          },
+          "superseded": {
+            "label": "Superseded",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "proposed": [
+            "accepted",
+            "rejected"
+          ],
+          "accepted": [
+            "superseded"
+          ],
+          "rejected": [
+            "proposed"
+          ],
+          "superseded": [
+            "proposed"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.decisionType",
+            "data.decidedBy",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.decisionType"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags",
+          "data.context",
+          "data.decision",
+          "data.rationale"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Decision",
+              "fields": [
+                "data.decisionType",
+                "data.context",
+                "data.decision",
+                "data.rationale",
+                "data.consequences",
+                "data.requestId",
+                "data.decidedBy",
+                "data.decidedAt"
               ]
             }
           ]

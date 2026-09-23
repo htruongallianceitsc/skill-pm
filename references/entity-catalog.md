@@ -60,3 +60,7 @@ Then create the folder/schema and add relation/quality rules only when needed.
 ## v9 Module semantics
 
 Treat `module` as a functional **feature group**, not as a generic container for arbitrary entities. Example: module `AUTH` contains features `Login`, `Register`, and `Forgot Password`. Store the durable edge on each Feature as `feature --belongs_to--> module`. Requirements, screens, APIs, rules, and tests should normally trace through Features rather than being directly owned by a Module.
+
+## Decision
+
+Use `decision` for durable business/product/technical decisions and resolved project questions. Starter lifecycle is `proposed -> accepted/rejected`, with accepted decisions later becoming `superseded` rather than overwritten. Store context, decision, rationale, consequences, source request id, and decision actor/time. Link Decisions to affected durable entities using configured relation mappings.

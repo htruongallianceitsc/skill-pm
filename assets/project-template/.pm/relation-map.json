@@ -52,6 +52,14 @@
     "implements": {
       "label": "Implements",
       "reverse": "implemented_by"
+    },
+    "supersedes": {
+      "label": "Supersedes",
+      "reverse": "superseded_by"
+    },
+    "decides": {
+      "label": "Decides",
+      "reverse": "decided_by"
     }
   },
   "mappings": [
@@ -259,6 +267,52 @@
         "screen",
         "api",
         "database-table"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "decision.relates-to.any",
+      "from": [
+        "decision"
+      ],
+      "relation": "relates_to",
+      "to": [
+        "*"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "decision.supersedes.decision",
+      "from": [
+        "decision"
+      ],
+      "relation": "supersedes",
+      "to": [
+        "decision"
+      ],
+      "cardinality": "many-to-one",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "decision.decides.spec",
+      "from": [
+        "decision"
+      ],
+      "relation": "decides",
+      "to": [
+        "feature",
+        "requirement",
+        "business-rule",
+        "screen",
+        "api",
+        "database-table",
+        "task",
+        "bug"
       ],
       "cardinality": "many-to-many",
       "required": false,
