@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "1.0",
+  "rules": [
+    {
+      "id": "requirement-test-coverage",
+      "label": "Approved requirements should have test coverage",
+      "severity": "warning",
+      "kind": "relation-count",
+      "targetEntityTypes": [
+        "requirement"
+      ],
+      "statusIn": [
+        "approved",
+        "in_progress",
+        "implemented"
+      ],
+      "direction": "incoming",
+      "relation": "verifies",
+      "peerEntityTypes": [
+        "test-case"
+      ],
+      "min": 1,
+      "category": "test-coverage"
+    },
+    {
+      "id": "feature-requirement-trace",
+      "label": "Planned features should have at least one requirement",
+      "severity": "warning",
+      "kind": "relation-count",
+      "targetEntityTypes": [
+        "feature"
+      ],
+      "statusIn": [
+        "planned",
+        "in_progress",
+        "done"
+      ],
+      "direction": "incoming",
+      "relation": "applies_to",
+      "peerEntityTypes": [
+        "requirement"
+      ],
+      "min": 1,
+      "category": "traceability"
+    },
+    {
+      "id": "test-case-automation-coverage",
+      "label": "Ready test cases should be linked to an automated script where automation is expected",
+      "severity": "info",
+      "kind": "relation-count",
+      "targetEntityTypes": [
+        "test-case"
+      ],
+      "statusIn": [
+        "ready",
+        "passed",
+        "failed"
+      ],
+      "direction": "incoming",
+      "relation": "automates",
+      "peerEntityTypes": [
+        "test-script"
+      ],
+      "min": 1,
+      "category": "automation-coverage"
+    },
+    {
+      "id": "bug-traceability",
+      "label": "Active bugs should identify an affected project entity",
+      "severity": "warning",
+      "kind": "relation-count",
+      "targetEntityTypes": [
+        "bug"
+      ],
+      "statusIn": [
+        "open",
+        "triaged",
+        "in_progress",
+        "ready_for_test"
+      ],
+      "direction": "outgoing",
+      "relation": "affects",
+      "peerEntityTypes": [
+        "*"
+      ],
+      "min": 1,
+      "category": "traceability"
+    },
+    {
+      "id": "task-traceability",
+      "label": "Active tasks should be linked to project scope",
+      "severity": "info",
+      "kind": "relation-count",
+      "targetEntityTypes": [
+        "task"
+      ],
+      "statusIn": [
+        "todo",
+        "in_progress",
+        "blocked"
+      ],
+      "direction": "outgoing",
+      "relation": "relates_to",
+      "peerEntityTypes": [
+        "*"
+      ],
+      "min": 1,
+      "category": "traceability"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "2.1",
+  "protocolVersion": "2.1",
+  "identity": {
+    "alwaysImmutableFields": [
+      "uid",
+      "localRef"
+    ],
+    "immutableAfterServerAssign": [
+      "id",
+      "code"
+    ]
+  },
+  "storage": {
+    "entityRegistry": ".pm/entity-types.json",
+    "relationMap": ".pm/relation-map.json",
+    "manifest": ".pm/manifest.json",
+    "syncState": ".pm/sync-state.json",
+    "conflictFolder": ".pm/conflicts",
+    "entityIndex": ".pm/indexes/entity-index.json",
+    "relationIndex": ".pm/indexes/relation-index.json",
+    "lookups": ".pm/lookups.json",
+    "qualityRules": ".pm/quality-rules.json",
+    "qualityReport": ".pm/reports/quality-report.json",
+    "intelligence": ".pm/intelligence.json",
+    "intelligenceReportFolder": ".pm/reports/intelligence",
+    "changeManagement": ".pm/change-management.json",
+    "changeSetFolder": ".pm/changesets",
+    "baselineFolder": ".pm/baselines",
+    "auditState": ".pm/audit-state.json",
+    "agentWorkflow": ".pm/agent-workflow.json",
+    "workPlanFolder": ".pm/workplans",
+    "workPlanSchema": "schemas/core/workplan.schema.json"
+  },
+  "sync": {
+    "baseUrl": "",
+    "endpoint": "/api/project-manager/sync",
+    "tokenEnv": "PM_API_TOKEN",
+    "timeoutSeconds": 30,
+    "defaultDirection": "bidirectional",
+    "defaultForceLocal": false,
+    "includeDeleted": true,
+    "includeWorkspaceDefinition": true,
+    "workspaceDefinitionMode": "bidirectional"
+  },
+  "content": {
+    "inlineRecommendedMaxBytes": 65536,
+    "allowBinaryInSync": false
+  },
+  "validation": {
+    "validateDataSchemas": true,
+    "validateLifecycleStatuses": true,
+    "qualityRulesBlockSyncAtSeverity": "error"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bug data",
+  "type": "object",
+  "properties": {
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium",
+      "x-lookup": "severity"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "critical"
+      ],
+      "default": "normal",
+      "x-lookup": "priority"
+    },
+    "environment": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "assignee": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "stepsToReproduce": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expectedResult": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "actualResult": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "foundInVersion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "fixedInVersion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [],
+  "additionalProperties": true
+}

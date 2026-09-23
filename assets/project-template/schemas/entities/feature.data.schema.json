@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Feature data",
+  "type": "object",
+  "properties": {
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "critical"
+      ],
+      "default": "normal",
+      "x-lookup": "priority"
+    },
+    "featureType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "user",
+        "system",
+        "integration",
+        "admin",
+        null
+      ],
+      "x-lookup": "featureType"
+    },
+    "owner": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "targetRelease": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [],
+  "additionalProperties": true
+}

@@ -1,0 +1,1390 @@
+{
+  "schemaVersion": "2.0",
+  "types": {
+    "document": {
+      "displayName": "Document",
+      "folder": "entities/documents",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "DOC",
+      "category": "knowledge",
+      "defaults": {
+        "status": "draft",
+        "data": {
+          "documentType": "general",
+          "owner": null,
+          "summary": null,
+          "audience": []
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/document.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "draft",
+        "statuses": {
+          "draft": {
+            "label": "Draft",
+            "terminal": false
+          },
+          "active": {
+            "label": "Active",
+            "terminal": false
+          },
+          "archived": {
+            "label": "Archived",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "draft": [
+            "active",
+            "archived"
+          ],
+          "active": [
+            "draft",
+            "archived"
+          ],
+          "archived": [
+            "active"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.documentType",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.documentType"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.documentType",
+                "data.owner",
+                "data.summary",
+                "data.audience"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "module": {
+      "displayName": "Module",
+      "folder": "entities/modules",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "MOD",
+      "category": "product",
+      "defaults": {
+        "status": "draft",
+        "data": {
+          "owner": null,
+          "scope": null,
+          "order": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/module.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "draft",
+        "statuses": {
+          "draft": {
+            "label": "Draft",
+            "terminal": false
+          },
+          "active": {
+            "label": "Active",
+            "terminal": false
+          },
+          "deprecated": {
+            "label": "Deprecated",
+            "terminal": false
+          },
+          "archived": {
+            "label": "Archived",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "draft": [
+            "active",
+            "archived"
+          ],
+          "active": [
+            "deprecated",
+            "archived"
+          ],
+          "deprecated": [
+            "active",
+            "archived"
+          ],
+          "archived": [
+            "active"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.owner",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.owner",
+                "data.scope",
+                "data.order"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "feature": {
+      "displayName": "Feature",
+      "folder": "entities/features",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "FEAT",
+      "category": "product",
+      "defaults": {
+        "status": "draft",
+        "data": {
+          "priority": "normal",
+          "featureType": null,
+          "owner": null,
+          "targetRelease": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/feature.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "draft",
+        "statuses": {
+          "draft": {
+            "label": "Draft",
+            "terminal": false
+          },
+          "planned": {
+            "label": "Planned",
+            "terminal": false
+          },
+          "in_progress": {
+            "label": "In progress",
+            "terminal": false
+          },
+          "done": {
+            "label": "Done",
+            "terminal": true
+          },
+          "deprecated": {
+            "label": "Deprecated",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "draft": [
+            "planned",
+            "deprecated"
+          ],
+          "planned": [
+            "in_progress",
+            "deprecated"
+          ],
+          "in_progress": [
+            "planned",
+            "done",
+            "deprecated"
+          ],
+          "done": [
+            "in_progress",
+            "deprecated"
+          ],
+          "deprecated": [
+            "planned"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.priority",
+            "data.owner",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.priority",
+          "data.featureType"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.priority",
+                "data.featureType",
+                "data.owner",
+                "data.targetRelease"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "requirement": {
+      "displayName": "Requirement",
+      "folder": "entities/requirements",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "REQ",
+      "category": "analysis",
+      "defaults": {
+        "status": "draft",
+        "data": {
+          "priority": "normal",
+          "requirementType": null,
+          "acceptanceCriteria": [],
+          "source": null,
+          "rationale": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/requirement.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "draft",
+        "statuses": {
+          "draft": {
+            "label": "Draft",
+            "terminal": false
+          },
+          "approved": {
+            "label": "Approved",
+            "terminal": false
+          },
+          "in_progress": {
+            "label": "In progress",
+            "terminal": false
+          },
+          "implemented": {
+            "label": "Implemented",
+            "terminal": true
+          },
+          "rejected": {
+            "label": "Rejected",
+            "terminal": true
+          },
+          "deprecated": {
+            "label": "Deprecated",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "draft": [
+            "approved",
+            "rejected"
+          ],
+          "approved": [
+            "draft",
+            "in_progress",
+            "deprecated"
+          ],
+          "in_progress": [
+            "approved",
+            "implemented",
+            "deprecated"
+          ],
+          "implemented": [
+            "in_progress",
+            "deprecated"
+          ],
+          "rejected": [
+            "draft"
+          ],
+          "deprecated": [
+            "approved"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.priority",
+            "data.requirementType",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.priority",
+          "data.requirementType"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.priority",
+                "data.requirementType",
+                "data.acceptanceCriteria",
+                "data.source",
+                "data.rationale"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "business-rule": {
+      "displayName": "Business Rule",
+      "folder": "entities/business-rules",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "BR",
+      "category": "analysis",
+      "defaults": {
+        "status": "draft",
+        "data": {
+          "ruleType": "general",
+          "priority": "normal",
+          "expression": null,
+          "effectiveFrom": null,
+          "effectiveTo": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/business-rule.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "draft",
+        "statuses": {
+          "draft": {
+            "label": "Draft",
+            "terminal": false
+          },
+          "active": {
+            "label": "Active",
+            "terminal": false
+          },
+          "deprecated": {
+            "label": "Deprecated",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "draft": [
+            "active"
+          ],
+          "active": [
+            "draft",
+            "deprecated"
+          ],
+          "deprecated": [
+            "active"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.priority",
+            "data.ruleType",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.priority",
+          "data.ruleType"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.ruleType",
+                "data.priority",
+                "data.expression",
+                "data.effectiveFrom",
+                "data.effectiveTo"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "screen": {
+      "displayName": "Screen",
+      "folder": "entities/screens",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "SCR",
+      "category": "design",
+      "defaults": {
+        "status": "draft",
+        "data": {
+          "route": null,
+          "platform": null,
+          "screenType": null,
+          "componentName": null,
+          "designUrl": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/screen.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "draft",
+        "statuses": {
+          "draft": {
+            "label": "Draft",
+            "terminal": false
+          },
+          "designed": {
+            "label": "Designed",
+            "terminal": false
+          },
+          "implemented": {
+            "label": "Implemented",
+            "terminal": true
+          },
+          "deprecated": {
+            "label": "Deprecated",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "draft": [
+            "designed",
+            "deprecated"
+          ],
+          "designed": [
+            "draft",
+            "implemented",
+            "deprecated"
+          ],
+          "implemented": [
+            "designed",
+            "deprecated"
+          ],
+          "deprecated": [
+            "designed"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.platform",
+            "data.route",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.platform"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.route",
+                "data.platform",
+                "data.screenType",
+                "data.componentName",
+                "data.designUrl"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "api": {
+      "displayName": "Api",
+      "folder": "entities/apis",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "API",
+      "category": "technical",
+      "defaults": {
+        "status": "draft",
+        "data": {
+          "method": null,
+          "path": null,
+          "operationId": null,
+          "authRequired": null,
+          "requestContentType": null,
+          "responseContentType": null,
+          "apiVersion": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/api.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "draft",
+        "statuses": {
+          "draft": {
+            "label": "Draft",
+            "terminal": false
+          },
+          "designed": {
+            "label": "Designed",
+            "terminal": false
+          },
+          "implemented": {
+            "label": "Implemented",
+            "terminal": true
+          },
+          "deprecated": {
+            "label": "Deprecated",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "draft": [
+            "designed",
+            "deprecated"
+          ],
+          "designed": [
+            "draft",
+            "implemented",
+            "deprecated"
+          ],
+          "implemented": [
+            "designed",
+            "deprecated"
+          ],
+          "deprecated": [
+            "designed"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.method",
+            "data.path",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.method"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.method",
+                "data.path",
+                "data.operationId",
+                "data.authRequired",
+                "data.requestContentType",
+                "data.responseContentType",
+                "data.apiVersion"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "database-table": {
+      "displayName": "Database Table",
+      "folder": "entities/database-tables",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "DBT",
+      "category": "technical",
+      "defaults": {
+        "status": "draft",
+        "data": {
+          "schema": null,
+          "tableName": null,
+          "objectType": "table",
+          "primaryKey": [],
+          "engine": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/database-table.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "draft",
+        "statuses": {
+          "draft": {
+            "label": "Draft",
+            "terminal": false
+          },
+          "designed": {
+            "label": "Designed",
+            "terminal": false
+          },
+          "implemented": {
+            "label": "Implemented",
+            "terminal": true
+          },
+          "deprecated": {
+            "label": "Deprecated",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "draft": [
+            "designed",
+            "deprecated"
+          ],
+          "designed": [
+            "draft",
+            "implemented",
+            "deprecated"
+          ],
+          "implemented": [
+            "designed",
+            "deprecated"
+          ],
+          "deprecated": [
+            "designed"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.schema",
+            "data.tableName",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.objectType"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.schema",
+                "data.tableName",
+                "data.objectType",
+                "data.primaryKey",
+                "data.engine"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "task": {
+      "displayName": "Task",
+      "folder": "entities/tasks",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "TASK",
+      "category": "work",
+      "defaults": {
+        "status": "todo",
+        "data": {
+          "priority": "normal",
+          "taskType": null,
+          "assignee": null,
+          "dueDate": null,
+          "estimateHours": null,
+          "actualHours": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/task.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "todo",
+        "statuses": {
+          "todo": {
+            "label": "To do",
+            "terminal": false
+          },
+          "in_progress": {
+            "label": "In progress",
+            "terminal": false
+          },
+          "blocked": {
+            "label": "Blocked",
+            "terminal": false
+          },
+          "done": {
+            "label": "Done",
+            "terminal": true
+          },
+          "cancelled": {
+            "label": "Cancelled",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "todo": [
+            "in_progress",
+            "blocked",
+            "cancelled"
+          ],
+          "in_progress": [
+            "todo",
+            "blocked",
+            "done",
+            "cancelled"
+          ],
+          "blocked": [
+            "todo",
+            "in_progress",
+            "cancelled"
+          ],
+          "done": [
+            "in_progress"
+          ],
+          "cancelled": [
+            "todo"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.priority",
+            "data.assignee",
+            "data.dueDate",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.priority",
+          "data.assignee",
+          "data.taskType"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.priority",
+                "data.taskType",
+                "data.assignee",
+                "data.dueDate",
+                "data.estimateHours",
+                "data.actualHours"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "bug": {
+      "displayName": "Bug",
+      "folder": "entities/bugs",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "BUG",
+      "category": "work",
+      "defaults": {
+        "status": "open",
+        "data": {
+          "severity": "medium",
+          "priority": "normal",
+          "environment": null,
+          "assignee": null,
+          "stepsToReproduce": [],
+          "expectedResult": null,
+          "actualResult": null,
+          "foundInVersion": null,
+          "fixedInVersion": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/bug.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "open",
+        "statuses": {
+          "open": {
+            "label": "Open",
+            "terminal": false
+          },
+          "triaged": {
+            "label": "Triaged",
+            "terminal": false
+          },
+          "in_progress": {
+            "label": "In progress",
+            "terminal": false
+          },
+          "ready_for_test": {
+            "label": "Ready for test",
+            "terminal": false
+          },
+          "closed": {
+            "label": "Closed",
+            "terminal": true
+          },
+          "rejected": {
+            "label": "Rejected",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "open": [
+            "triaged",
+            "rejected"
+          ],
+          "triaged": [
+            "open",
+            "in_progress",
+            "rejected"
+          ],
+          "in_progress": [
+            "triaged",
+            "ready_for_test"
+          ],
+          "ready_for_test": [
+            "in_progress",
+            "closed"
+          ],
+          "closed": [
+            "open"
+          ],
+          "rejected": [
+            "open"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.severity",
+            "data.priority",
+            "data.assignee",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.severity",
+          "data.priority",
+          "data.assignee"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.severity",
+                "data.priority",
+                "data.environment",
+                "data.assignee",
+                "data.stepsToReproduce",
+                "data.expectedResult",
+                "data.actualResult",
+                "data.foundInVersion",
+                "data.fixedInVersion"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "test-case": {
+      "displayName": "Test Case",
+      "folder": "entities/test-cases",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "TC",
+      "category": "qa",
+      "defaults": {
+        "status": "draft",
+        "data": {
+          "priority": "normal",
+          "testType": null,
+          "preconditions": [],
+          "steps": [],
+          "expectedResult": null,
+          "testData": null
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/test-case.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "draft",
+        "statuses": {
+          "draft": {
+            "label": "Draft",
+            "terminal": false
+          },
+          "ready": {
+            "label": "Ready",
+            "terminal": false
+          },
+          "passed": {
+            "label": "Passed",
+            "terminal": false
+          },
+          "failed": {
+            "label": "Failed",
+            "terminal": false
+          },
+          "blocked": {
+            "label": "Blocked",
+            "terminal": false
+          },
+          "retired": {
+            "label": "Retired",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "draft": [
+            "ready",
+            "retired"
+          ],
+          "ready": [
+            "draft",
+            "passed",
+            "failed",
+            "blocked",
+            "retired"
+          ],
+          "passed": [
+            "ready",
+            "failed",
+            "retired"
+          ],
+          "failed": [
+            "ready",
+            "passed",
+            "blocked",
+            "retired"
+          ],
+          "blocked": [
+            "ready",
+            "failed",
+            "retired"
+          ],
+          "retired": [
+            "draft"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.priority",
+            "data.testType",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.priority",
+          "data.testType"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.priority",
+                "data.testType",
+                "data.preconditions",
+                "data.steps",
+                "data.expectedResult",
+                "data.testData"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "test-script": {
+      "displayName": "Test Script",
+      "folder": "entities/test-scripts",
+      "schema": "schemas/core/entity.schema.json",
+      "codePrefix": "TS",
+      "category": "qa",
+      "defaults": {
+        "status": "draft",
+        "data": {
+          "framework": "playwright",
+          "language": "typescript",
+          "command": null,
+          "enabled": true
+        },
+        "content": []
+      },
+      "dataSchema": "schemas/entities/test-script.data.schema.json",
+      "lifecycle": {
+        "initialStatus": "draft",
+        "statuses": {
+          "draft": {
+            "label": "Draft",
+            "terminal": false
+          },
+          "ready": {
+            "label": "Ready",
+            "terminal": false
+          },
+          "passing": {
+            "label": "Passing",
+            "terminal": false
+          },
+          "failing": {
+            "label": "Failing",
+            "terminal": false
+          },
+          "disabled": {
+            "label": "Disabled",
+            "terminal": true
+          }
+        },
+        "transitions": {
+          "draft": [
+            "ready",
+            "disabled"
+          ],
+          "ready": [
+            "draft",
+            "passing",
+            "failing",
+            "disabled"
+          ],
+          "passing": [
+            "ready",
+            "failing",
+            "disabled"
+          ],
+          "failing": [
+            "ready",
+            "passing",
+            "disabled"
+          ],
+          "disabled": [
+            "draft",
+            "ready"
+          ]
+        }
+      },
+      "ui": {
+        "list": {
+          "columns": [
+            "code",
+            "title",
+            "status",
+            "data.framework",
+            "data.enabled",
+            "updatedAt"
+          ],
+          "defaultSort": [
+            {
+              "field": "updatedAt",
+              "direction": "desc"
+            }
+          ]
+        },
+        "filters": [
+          "status",
+          "data.framework",
+          "data.enabled"
+        ],
+        "searchFields": [
+          "code",
+          "title",
+          "tags"
+        ],
+        "form": {
+          "sections": [
+            {
+              "key": "general",
+              "label": "General",
+              "fields": [
+                "title",
+                "status",
+                "tags"
+              ]
+            },
+            {
+              "key": "details",
+              "label": "Details",
+              "fields": [
+                "data.framework",
+                "data.language",
+                "data.command",
+                "data.enabled"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

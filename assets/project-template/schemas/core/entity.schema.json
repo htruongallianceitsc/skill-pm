@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/core/entity.schema.json",
+  "title": "Project Workspace Entity",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "entityType",
+    "uid",
+    "id",
+    "code",
+    "localRef",
+    "title",
+    "status",
+    "isDeleted",
+    "tags",
+    "relations",
+    "data",
+    "content",
+    "revision",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string"
+    },
+    "entityType": {
+      "type": "string",
+      "minLength": 1
+    },
+    "uid": {
+      "type": "string",
+      "minLength": 8
+    },
+    "id": {
+      "type": [
+        "string",
+        "integer",
+        "null"
+      ]
+    },
+    "code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "localRef": {
+      "type": "string",
+      "pattern": "^local:"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "isDeleted": {
+      "type": "boolean"
+    },
+    "deletedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "targetUid",
+          "targetType"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "targetUid": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "data": {
+      "type": "object"
+    },
+    "content": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "format",
+          "mode"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "inline",
+              "file"
+            ]
+          },
+          "body": {},
+          "path": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "1.0",
+  "selector": {
+    "allowExactTitleFallback": true,
+    "caseInsensitive": true
+  },
+  "profiles": {
+    "context": {
+      "maxDepth": 2,
+      "direction": "both",
+      "relations": [
+        "*"
+      ],
+      "entityTypes": [
+        "*"
+      ],
+      "maxEntities": 40
+    },
+    "impact": {
+      "maxDepth": 3,
+      "direction": "both",
+      "relations": [
+        "belongs_to",
+        "applies_to",
+        "constrains",
+        "supports",
+        "verifies",
+        "automates",
+        "affects",
+        "depends_on",
+        "blocks",
+        "implements"
+      ],
+      "entityTypes": [
+        "*"
+      ],
+      "maxEntities": 100
+    }
+  },
+  "orphanDetection": {
+    "ignoreDeleted": true,
+    "ignoreStatuses": [
+      "archived"
+    ],
+    "ignoreEntityTypes": []
+  },
+  "context": {
+    "defaultDetail": "summary",
+    "maxInlineContentChars": 12000,
+    "includeQualityFindings": true,
+    "includeFileReferences": true
+  },
+  "health": {
+    "qualitySeverities": [
+      "error",
+      "warning",
+      "info"
+    ],
+    "includeOrphans": true,
+    "includeBrokenLinks": true,
+    "includeSyncState": true,
+    "includeConflicts": true
+  }
+}

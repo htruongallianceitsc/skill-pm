@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Test script data",
+  "type": "object",
+  "properties": {
+    "framework": {
+      "type": "string",
+      "enum": [
+        "playwright",
+        "cypress",
+        "flutter_test",
+        "xunit",
+        "other"
+      ],
+      "default": "playwright",
+      "x-lookup": "testFramework"
+    },
+    "language": {
+      "type": "string",
+      "default": "typescript"
+    },
+    "command": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [],
+  "additionalProperties": true
+}

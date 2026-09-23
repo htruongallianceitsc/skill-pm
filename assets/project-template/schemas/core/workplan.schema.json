@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "project-workspace/workplan.schema.json",
+  "title": "Project WorkPlan",
+  "type": "object",
+  "required": ["schemaVersion", "planId", "title", "request", "status", "actor", "steps", "createdAt", "updatedAt"],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "planId": {"type": "string", "pattern": "^PLAN-"},
+    "title": {"type": "string", "minLength": 1},
+    "request": {"type": "string", "minLength": 1},
+    "status": {
+      "enum": ["draft", "pending-review", "approved", "executing", "completed", "failed", "rejected", "cancelled"]
+    },
+    "actor": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {"type": "string"},
+        "kind": {"enum": ["user", "ai", "system"]}
+      }
+    },
+    "reason": {"type": ["string", "null"]},
+    "related": {"type": "array", "items": {"type": "string"}},
+    "contextRefs": {"type": "array", "items": {"type": "string"}},
+    "baseObjects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["uid", "payloadHash"],
+        "properties": {
+          "ref": {"type": "string"},
+          "uid": {"type": "string"},
+          "entityType": {"type": "string"},
+          "code": {"type": ["string", "null"]},
+          "title": {"type": "string"},
+          "payloadHash": {"type": "string"}
+        }
+      }
+    },
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "risks": {"type": "array", "items": {"type": "string"}},
+    "acceptanceCriteria": {"type": "array", "items": {"type": "string"}},
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["stepId", "operation"],
+        "properties": {
+          "stepId": {"type": "string", "minLength": 1},
+          "title": {"type": "string"},
+          "operation": {
+            "enum": ["create", "update", "content-upsert", "link", "unlink", "transition", "delete", "restore"]
+          },
+          "dependsOn": {"type": "array", "items": {"type": "string"}},
+          "handle": {"type": "string"},
+          "targetRef": {"type": "string"},
+          "sourceRef": {"type": "string"},
+          "entityType": {"type": "string"},
+          "relation": {"type": "string"},
+          "status": {"type": "string"},
+          "force": {"type": "boolean"},
+          "payload": {"type": "object"},
+          "patch": {"type": "object"},
+          "content": {"type": "object"}
+        }
+      }
+    },
+    "execution": {"type": "object"},
+    "events": {"type": "array", "items": {"type": "object"}},
+    "createdAt": {"type": "string"},
+    "updatedAt": {"type": "string"}
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "audit": {
+    "enabled": true,
+    "captureReferencedTextFiles": true,
+    "defaultActorEnv": "PM_ACTOR",
+    "detectManualEditsWithAuditScan": true
+  },
+  "review": {
+    "proposalMode": "json-merge-patch",
+    "protectAgainstStaleApproval": true,
+    "requireReasonForReject": true,
+    "immutableProposalFields": [
+      "uid",
+      "entityType",
+      "localRef",
+      "id",
+      "code",
+      "createdAt"
+    ]
+  },
+  "undo": {
+    "protectAgainstNewerChanges": true,
+    "physicalRemoveServerAssignedEntity": false
+  },
+  "baseline": {
+    "captureReferencedTextFiles": true,
+    "recommendedFor": [
+      "release",
+      "uat",
+      "handover",
+      "major-migration"
+    ]
+  }
+}

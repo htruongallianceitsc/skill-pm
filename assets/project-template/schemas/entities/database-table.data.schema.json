@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Database object data",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tableName": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "objectType": {
+      "type": "string",
+      "enum": [
+        "table",
+        "view",
+        "materialized-view"
+      ],
+      "default": "table",
+      "x-lookup": "databaseObjectType"
+    },
+    "primaryKey": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "engine": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [],
+  "additionalProperties": true
+}

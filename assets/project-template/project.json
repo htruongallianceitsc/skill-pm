@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "uid": "__PROJECT_UID__",
+  "id": null,
+  "code": null,
+  "localRef": "__PROJECT_LOCAL_REF__",
+  "name": "__PROJECT_NAME__",
+  "description": "",
+  "status": "active",
+  "revision": 1,
+  "createdAt": "__CREATED_AT__",
+  "updatedAt": "__CREATED_AT__",
+  "settings": {
+    "timezone": "UTC",
+    "defaultLanguage": "en"
+  }
+}

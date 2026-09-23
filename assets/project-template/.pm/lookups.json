@@ -1,0 +1,225 @@
+{
+  "schemaVersion": "1.0",
+  "lookups": {
+    "priority": [
+      {
+        "value": "low",
+        "label": "Low",
+        "order": 10
+      },
+      {
+        "value": "normal",
+        "label": "Normal",
+        "order": 20
+      },
+      {
+        "value": "high",
+        "label": "High",
+        "order": 30
+      },
+      {
+        "value": "critical",
+        "label": "Critical",
+        "order": 40
+      }
+    ],
+    "severity": [
+      {
+        "value": "low",
+        "label": "Low",
+        "order": 10
+      },
+      {
+        "value": "medium",
+        "label": "Medium",
+        "order": 20
+      },
+      {
+        "value": "high",
+        "label": "High",
+        "order": 30
+      },
+      {
+        "value": "critical",
+        "label": "Critical",
+        "order": 40
+      }
+    ],
+    "requirementType": [
+      {
+        "value": "functional",
+        "label": "Functional"
+      },
+      {
+        "value": "non-functional",
+        "label": "Non-functional"
+      },
+      {
+        "value": "constraint",
+        "label": "Constraint"
+      },
+      {
+        "value": "integration",
+        "label": "Integration"
+      }
+    ],
+    "featureType": [
+      {
+        "value": "user",
+        "label": "User feature"
+      },
+      {
+        "value": "system",
+        "label": "System feature"
+      },
+      {
+        "value": "integration",
+        "label": "Integration"
+      },
+      {
+        "value": "admin",
+        "label": "Admin"
+      }
+    ],
+    "platform": [
+      {
+        "value": "web",
+        "label": "Web"
+      },
+      {
+        "value": "ios",
+        "label": "iOS"
+      },
+      {
+        "value": "android",
+        "label": "Android"
+      },
+      {
+        "value": "desktop",
+        "label": "Desktop"
+      },
+      {
+        "value": "cross-platform",
+        "label": "Cross-platform"
+      }
+    ],
+    "httpMethod": [
+      {
+        "value": "GET",
+        "label": "GET"
+      },
+      {
+        "value": "POST",
+        "label": "POST"
+      },
+      {
+        "value": "PUT",
+        "label": "PUT"
+      },
+      {
+        "value": "PATCH",
+        "label": "PATCH"
+      },
+      {
+        "value": "DELETE",
+        "label": "DELETE"
+      },
+      {
+        "value": "HEAD",
+        "label": "HEAD"
+      },
+      {
+        "value": "OPTIONS",
+        "label": "OPTIONS"
+      }
+    ],
+    "databaseObjectType": [
+      {
+        "value": "table",
+        "label": "Table"
+      },
+      {
+        "value": "view",
+        "label": "View"
+      },
+      {
+        "value": "materialized-view",
+        "label": "Materialized view"
+      }
+    ],
+    "taskType": [
+      {
+        "value": "development",
+        "label": "Development"
+      },
+      {
+        "value": "analysis",
+        "label": "Analysis"
+      },
+      {
+        "value": "design",
+        "label": "Design"
+      },
+      {
+        "value": "testing",
+        "label": "Testing"
+      },
+      {
+        "value": "ops",
+        "label": "Ops"
+      }
+    ],
+    "testType": [
+      {
+        "value": "functional",
+        "label": "Functional"
+      },
+      {
+        "value": "integration",
+        "label": "Integration"
+      },
+      {
+        "value": "regression",
+        "label": "Regression"
+      },
+      {
+        "value": "smoke",
+        "label": "Smoke"
+      },
+      {
+        "value": "e2e",
+        "label": "End-to-end"
+      },
+      {
+        "value": "performance",
+        "label": "Performance"
+      },
+      {
+        "value": "security",
+        "label": "Security"
+      }
+    ],
+    "testFramework": [
+      {
+        "value": "playwright",
+        "label": "Playwright"
+      },
+      {
+        "value": "cypress",
+        "label": "Cypress"
+      },
+      {
+        "value": "flutter_test",
+        "label": "Flutter test"
+      },
+      {
+        "value": "xunit",
+        "label": "xUnit"
+      },
+      {
+        "value": "other",
+        "label": "Other"
+      }
+    ]
+  }
+}

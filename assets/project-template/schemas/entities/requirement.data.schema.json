@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Requirement data",
+  "type": "object",
+  "properties": {
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "critical"
+      ],
+      "default": "normal",
+      "x-lookup": "priority"
+    },
+    "requirementType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "functional",
+        "non-functional",
+        "constraint",
+        "integration",
+        null
+      ],
+      "x-lookup": "requirementType"
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rationale": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [],
+  "additionalProperties": true
+}

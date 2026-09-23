@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Screen data",
+  "type": "object",
+  "properties": {
+    "route": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "platform": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "web",
+        "ios",
+        "android",
+        "desktop",
+        "cross-platform",
+        null
+      ],
+      "x-lookup": "platform"
+    },
+    "screenType": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "componentName": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "designUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    }
+  },
+  "required": [],
+  "additionalProperties": true
+}

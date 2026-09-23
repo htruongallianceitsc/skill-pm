@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "2.1",
+  "protocolVersion": "2.1",
+  "clientInstanceId": "__CLIENT_INSTANCE_ID__",
+  "cursor": null,
+  "projectServerIdentity": null,
+  "lastSyncAt": null,
+  "entities": {},
+  "workspaceDefinition": {},
+  "changeSets": {},
+  "baselines": {},
+  "workPlans": {}
+}

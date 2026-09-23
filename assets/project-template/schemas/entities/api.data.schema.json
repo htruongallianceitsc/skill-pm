@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "API data",
+  "type": "object",
+  "properties": {
+    "method": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "HEAD",
+        "OPTIONS",
+        null
+      ],
+      "x-lookup": "httpMethod"
+    },
+    "path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "operationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "authRequired": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "requestContentType": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "responseContentType": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "apiVersion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [],
+  "additionalProperties": true
+}

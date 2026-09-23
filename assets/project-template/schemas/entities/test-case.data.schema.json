@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Test case data",
+  "type": "object",
+  "properties": {
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "critical"
+      ],
+      "default": "normal",
+      "x-lookup": "priority"
+    },
+    "testType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "functional",
+        "integration",
+        "regression",
+        "smoke",
+        "e2e",
+        "performance",
+        "security",
+        null
+      ],
+      "x-lookup": "testType"
+    },
+    "preconditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "expected": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "expectedResult": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "testData": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [],
+  "additionalProperties": true
+}

@@ -1,0 +1,268 @@
+{
+  "schemaVersion": "2.0",
+  "relationTypes": {
+    "belongs_to": {
+      "label": "Belongs to",
+      "reverse": "contains"
+    },
+    "relates_to": {
+      "label": "Relates to",
+      "reverse": "relates_to"
+    },
+    "applies_to": {
+      "label": "Applies to",
+      "reverse": "has_requirement"
+    },
+    "constrains": {
+      "label": "Constrains",
+      "reverse": "constrained_by"
+    },
+    "supports": {
+      "label": "Supports",
+      "reverse": "supported_by"
+    },
+    "verifies": {
+      "label": "Verifies",
+      "reverse": "verified_by"
+    },
+    "automates": {
+      "label": "Automates",
+      "reverse": "automated_by"
+    },
+    "affects": {
+      "label": "Affects",
+      "reverse": "affected_by"
+    },
+    "documents": {
+      "label": "Documents",
+      "reverse": "documented_by"
+    },
+    "depends_on": {
+      "label": "Depends on",
+      "reverse": "required_by"
+    },
+    "blocks": {
+      "label": "Blocks",
+      "reverse": "blocked_by"
+    },
+    "duplicates": {
+      "label": "Duplicates",
+      "reverse": "duplicated_by"
+    },
+    "implements": {
+      "label": "Implements",
+      "reverse": "implemented_by"
+    }
+  },
+  "mappings": [
+    {
+      "key": "feature.belongs-to.module",
+      "from": [
+        "feature"
+      ],
+      "relation": "belongs_to",
+      "to": [
+        "module"
+      ],
+      "cardinality": "many-to-one",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "requirement.applies-to.feature",
+      "from": [
+        "requirement"
+      ],
+      "relation": "applies_to",
+      "to": [
+        "feature"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "screen.supports.feature",
+      "from": [
+        "screen"
+      ],
+      "relation": "supports",
+      "to": [
+        "feature"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "business-rule.constrains.spec",
+      "from": [
+        "business-rule"
+      ],
+      "relation": "constrains",
+      "to": [
+        "requirement",
+        "feature"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "api.supports.product",
+      "from": [
+        "api"
+      ],
+      "relation": "supports",
+      "to": [
+        "feature",
+        "screen"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "database-table.supports.technical",
+      "from": [
+        "database-table"
+      ],
+      "relation": "supports",
+      "to": [
+        "api",
+        "feature"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "test-case.verifies.spec",
+      "from": [
+        "test-case"
+      ],
+      "relation": "verifies",
+      "to": [
+        "requirement",
+        "business-rule",
+        "feature"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "test-script.automates.test-case",
+      "from": [
+        "test-script"
+      ],
+      "relation": "automates",
+      "to": [
+        "test-case"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "task.relates-to.any",
+      "from": [
+        "task"
+      ],
+      "relation": "relates_to",
+      "to": [
+        "*"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "bug.affects.any",
+      "from": [
+        "bug"
+      ],
+      "relation": "affects",
+      "to": [
+        "*"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "document.documents.any",
+      "from": [
+        "document"
+      ],
+      "relation": "documents",
+      "to": [
+        "*"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "work-item.depends-on.work-item",
+      "from": [
+        "task",
+        "bug"
+      ],
+      "relation": "depends_on",
+      "to": [
+        "task",
+        "bug"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "work-item.blocks.work-item",
+      "from": [
+        "task",
+        "bug"
+      ],
+      "relation": "blocks",
+      "to": [
+        "task",
+        "bug"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "bug.duplicates.bug",
+      "from": [
+        "bug"
+      ],
+      "relation": "duplicates",
+      "to": [
+        "bug"
+      ],
+      "cardinality": "many-to-one",
+      "required": false,
+      "allowUnresolved": false
+    },
+    {
+      "key": "task.implements.scope",
+      "from": [
+        "task"
+      ],
+      "relation": "implements",
+      "to": [
+        "feature",
+        "requirement",
+        "business-rule",
+        "screen",
+        "api",
+        "database-table"
+      ],
+      "cardinality": "many-to-many",
+      "required": false,
+      "allowUnresolved": false
+    }
+  ]
+}
