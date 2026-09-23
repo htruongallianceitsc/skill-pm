@@ -11,7 +11,7 @@
       "source": "./",
       "displayName": "Project Workspace Manager",
       "description": "Manage schema-driven software projects as portable local folders of JSON entities, with AI WorkPlans, audited change history, graph-based context/impact analysis, and safe sync to a Project Manager API.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "htruong"
       },
