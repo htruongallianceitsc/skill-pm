@@ -1,0 +1,22 @@
+{
+  "name": "project-workspace-manager",
+  "displayName": "Project Workspace Manager",
+  "version": "0.1.0",
+  "description": "Manage schema-driven software projects as portable local folders of JSON entities, with AI WorkPlans, audited change history, graph-based context/impact analysis, and safe sync to a Project Manager API.",
+  "author": {
+    "name": "htruong",
+    "url": "https://github.com/htruongallianceitsc"
+  },
+  "homepage": "https://github.com/htruongallianceitsc/skill-pm",
+  "repository": "https://github.com/htruongallianceitsc/skill-pm",
+  "license": "MIT",
+  "keywords": [
+    "project-management",
+    "requirements",
+    "traceability",
+    "json",
+    "schema-driven",
+    "workplan"
+  ],
+  "agents": []
+}
